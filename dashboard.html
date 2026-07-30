@@ -96,7 +96,7 @@
     border-left:1px solid var(--border);
     margin-left:22px;
   }
-  .menu-group.open .submenu{ max-height:400px; }
+  .menu-group.open .submenu{ max-height:500px; }
   .submenu li a{
     display:block;
     padding:8px 12px;
@@ -288,39 +288,87 @@
         <a class="menu-link active" href="#">Home</a>
       </div>
 
-      <div class="menu-group">
+      <!-- Menu SDM -->
+      <div class="menu-group" id="menu-sdm">
         <div class="menu-link" data-toggle>
           <span>SDM</span><span class="chevron">›</span>
         </div>
         <ul class="submenu">
-          <li><a href="#">Regional 1</a></li>
-          <li><a href="#">Regional 2</a></li>
           <li><a href="#">Data Karyawan</a></li>
+          <li><a href="#">Terminated</a></li>
+          <li><a href="#">Rotasi / Promosi / Demosi / Mutasi</a></li>
         </ul>
       </div>
 
-      <div class="menu-group">
+      <!-- Menu Disburse -->
+      <div class="menu-group" id="menu-disburse">
         <div class="menu-link" data-toggle>
-          <span>Disburse National</span><span class="chevron">›</span>
+          <span>Disburse</span><span class="chevron">›</span>
         </div>
         <ul class="submenu">
-          <li><a href="#">Regional 1</a></li>
-          <li><a href="#">Regional 2</a></li>
-          <li><a href="#">Java</a></li>
+          <li data-region="Regional 1"><a href="#">Regional 1</a></li>
+          <li data-region="Regional 2"><a href="#">Regional 2</a></li>
+          <li data-region="Java"><a href="#">Java</a></li>
         </ul>
       </div>
 
-      <div class="menu-group">
+      <!-- Menu Forecast -->
+      <div class="menu-group" id="menu-forecast">
         <div class="menu-link" data-toggle>
-          <span>Achievement</span><span class="chevron">›</span>
+          <span>Forecast</span><span class="chevron">›</span>
         </div>
         <ul class="submenu">
-          <li><a href="#">Achievement Account Officer</a></li>
-          <li class="nested"><a href="#">↳ Regional 1</a></li>
-          <li class="nested"><a href="#">↳ Regional 2</a></li>
-          <li class="nested"><a href="#">↳ Java</a></li>
-          <li><a href="#">Achievement Relationship Officer DPK 0-2</a></li>
-          <li class="nested"><a href="#">↳ Pengajuan Bensin</a></li>
+          <li data-region="Regional 1"><a href="#">Regional 1</a></li>
+          <li data-region="Regional 2"><a href="#">Regional 2</a></li>
+          <li data-region="Java"><a href="#">Java</a></li>
+        </ul>
+      </div>
+
+      <!-- Menu DPK 0 - 2 -->
+      <div class="menu-group" id="menu-dpk02">
+        <div class="menu-link" data-toggle>
+          <span>DPK 0 - 2</span><span class="chevron">›</span>
+        </div>
+        <ul class="submenu">
+          <li data-region="Regional 1"><a href="#">Regional 1</a></li>
+          <li data-region="Regional 2"><a href="#">Regional 2</a></li>
+          <li data-region="Java"><a href="#">Java</a></li>
+        </ul>
+      </div>
+
+      <!-- Menu DPK 3 - 6 -->
+      <div class="menu-group" id="menu-dpk36">
+        <div class="menu-link" data-toggle>
+          <span>DPK 3 - 6</span><span class="chevron">›</span>
+        </div>
+        <ul class="submenu">
+          <li data-region="Regional 1"><a href="#">Regional 1</a></li>
+          <li data-region="Regional 2"><a href="#">Regional 2</a></li>
+          <li data-region="Java"><a href="#">Java</a></li>
+        </ul>
+      </div>
+
+      <!-- Menu DPK 0 - 10 -->
+      <div class="menu-group" id="menu-dpk010">
+        <div class="menu-link" data-toggle>
+          <span>DPK 0 - 10</span><span class="chevron">›</span>
+        </div>
+        <ul class="submenu">
+          <li data-region="Regional 1"><a href="#">Regional 1</a></li>
+          <li data-region="Regional 2"><a href="#">Regional 2</a></li>
+          <li data-region="Java"><a href="#">Java</a></li>
+        </ul>
+      </div>
+
+      <!-- Menu DPK 7 - 10 -->
+      <div class="menu-group" id="menu-dpk710">
+        <div class="menu-link" data-toggle>
+          <span>DPK 7 - 10</span><span class="chevron">›</span>
+        </div>
+        <ul class="submenu">
+          <li data-region="Regional 1"><a href="#">Regional 1</a></li>
+          <li data-region="Regional 2"><a href="#">Regional 2</a></li>
+          <li data-region="Java"><a href="#">Java</a></li>
         </ul>
       </div>
 
@@ -334,7 +382,7 @@
         <div class="avatar" id="avatarInitial">–</div>
         <div class="info">
           <div class="email" id="userEmail">Memuat...</div>
-          <div class="role">Administrator</div>
+          <div class="role" id="userRole">Administrator</div>
         </div>
       </div>
       <button class="logout-btn" id="logoutBtn">Keluar</button>
@@ -371,8 +419,8 @@
         </div>
         <div class="stat-card">
           <div class="label">Regional Aktif</div>
-          <div class="value">2</div>
-          <div class="delta">Regional 1 &amp; Regional 2</div>
+          <div class="value">3</div>
+          <div class="delta">Regional 1, Regional 2 &amp; Java</div>
         </div>
       </div>
 
@@ -385,7 +433,7 @@
           <h4>Akses Cepat</h4>
           <ul class="link-list">
             <li>Data Karyawan <span class="tag">SDM</span></li>
-            <li>Pengajuan Bensin <span class="tag">Achievement</span></li>
+            <li>Forecast <span class="tag">Laporan</span></li>
             <li>Our Team <span class="tag">Umum</span></li>
           </ul>
         </div>
@@ -393,9 +441,10 @@
     </div>
   </div>
 
-  <!-- Firebase Auth -->
+  <!-- Firebase Auth & Firestore -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
@@ -408,8 +457,9 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    // Proteksi halaman: kalau belum login, lempar balik ke login.html
+    // Proteksi halaman & Cek Hak Akses User
     auth.onAuthStateChanged(function(user){
       if(!user){
         window.location.href = 'login.html';
@@ -417,7 +467,67 @@
       }
       document.getElementById('userEmail').textContent = user.email;
       document.getElementById('avatarInitial').textContent = user.email.charAt(0).toUpperCase();
+
+      // Mengambil data hak akses pengguna dari Cloud Firestore
+      db.collection('users').doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          const userData = doc.data();
+          applyUserPermissions(userData);
+        } else {
+          // Jika dokumen belum terdaftar di collection 'users'
+          console.warn('Data konfigurasi hak akses pengguna tidak ditemukan.');
+        }
+      }).catch(err => {
+        console.error("Gagal memuat akses:", err);
+      });
     });
+
+    // Fungsi Pengatur Tampilan Menu Berdasarkan RBAC
+    function applyUserPermissions(userData) {
+      const role = userData.role || 'user';
+      document.getElementById('userRole').textContent = role.toUpperCase();
+
+      // Jika Superadmin, beri akses penuh ke seluruh menu
+      if (role === 'superadmin') return;
+
+      const perms = userData.permissions || {};
+      const allowedRegions = userData.allowed_regions || [];
+
+      // Control Akses Menu SDM
+      if (!perms.sdm) {
+        const sdmMenu = document.getElementById('menu-sdm');
+        if (sdmMenu) sdmMenu.style.display = 'none';
+      }
+
+      // Control Akses Menu Berbasis Wilayah (Disburse, Forecast, DPK)
+      const featureMenus = [
+        { id: 'menu-disburse', key: 'disburse' },
+        { id: 'menu-forecast', key: 'forecast' },
+        { id: 'menu-dpk02', key: 'dpk' },
+        { id: 'menu-dpk36', key: 'dpk' },
+        { id: 'menu-dpk010', key: 'dpk' },
+        { id: 'menu-dpk710', key: 'dpk' }
+      ];
+
+      featureMenus.forEach(item => {
+        const menuEl = document.getElementById(item.id);
+        if (!menuEl) return;
+
+        // Sembunyikan menu utama jika modul tidak diizinkan
+        if (!perms[item.key]) {
+          menuEl.style.display = 'none';
+        } else {
+          // Filter submenu berdasarkan regional pengguna
+          const regionItems = menuEl.querySelectorAll('ul.submenu li[data-region]');
+          regionItems.forEach(li => {
+            const regName = li.getAttribute('data-region');
+            if (allowedRegions.length > 0 && !allowedRegions.includes(regName)) {
+              li.style.display = 'none';
+            }
+          });
+        }
+      });
+    }
 
     document.getElementById('logoutBtn').addEventListener('click', function(){
       auth.signOut().then(function(){
