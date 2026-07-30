@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration Center — Data Karyawan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#14213d; --slate:#3b5a82; --gray-mute:#6b7785;
+    --bg:#f5f7fa; --card:#fff; --gold:#b08d57; --border:#e4e8ee; --red:#c9433a;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'IBM Plex Sans', sans-serif; background:var(--bg); color:var(--navy); min-height:100vh; }
+  .topbar{ background:#fff; border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .topbar .eyebrow{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); font-weight:600; }
+  .topbar h1{ font-family:'Source Serif 4', serif; font-size:18px; font-weight:600; }
+  .back-link{ font-size:13px; color:var(--slate); text-decoration:none; font-weight:500; }
+  .top-actions{ display:flex; align-items:center; gap:14px; }
+  .upload-link{
+    font-size:13px; font-weight:600; color:#fff; background:var(--navy);
+    padding:8px 14px; border-radius:6px; text-decoration:none;
+  }
+  .wrap{ max-width:1200px; margin:0 auto; padding:28px 24px; }
+  .controls{ display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; align-items:center; }
+  .search-box{
+    flex:1; min-width:220px; padding:10px 14px; border:1px solid var(--border);
+    border-radius:6px; font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; background:#fff;
+  }
+  select.filter-select{
+    padding:10px 12px; border:1px solid var(--border); border-radius:6px;
+    font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; background:#fff; color:var(--navy);
+  }
+  .count-note{ font-size:12.5px; color:var(--gray-mute); margin-bottom:12px; }
+  .table-wrap{ background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; min-width:820px; }
+  thead th{
+    text-align:left; padding:12px 14px; background:#f8f9fb; color:var(--gray-mute);
+    font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:600;
+    border-bottom:1px solid var(--border); position:sticky; top:0;
+  }
+  tbody td{ padding:11px 14px; border-bottom:1px solid var(--border); vertical-align:top; }
+  tbody tr:hover{ background:#fafbfc; }
+  .name-cell{ font-weight:600; color:var(--navy); }
+  .sub-cell{ font-size:11.5px; color:var(--gray-mute); }
+  .btn-detail{
+    font-size:12px; font-weight:600; color:var(--slate); background:#eef2f7;
+    border:none; padding:6px 10px; border-radius:5px; cursor:pointer;
+  }
+  .btn-detail:hover{ background:#e2e9f2; }
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--gray-mute); font-size:13.5px; }
+  .denied{ text-align:center; padding:80px 20px; }
+  .denied h2{ font-family:'Source Serif 4', serif; font-size:22px; margin-bottom:10px; }
+  .denied p{ color:var(--gray-mute); font-size:14px; }
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,33,61,0.5);
+    align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background:#fff; border-radius:10px; padding:26px; max-width:420px; width:100%;
+  }
+  .modal h3{ font-family:'Source Serif 4', serif; font-size:18px; margin-bottom:4px; }
+  .modal .sub{ font-size:12.5px; color:var(--gray-mute); margin-bottom:18px; }
+  .modal-field{ margin-bottom:12px; }
+  .modal-field label{ font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--gray-mute); font-weight:600; display:block; margin-bottom:3px; }
+  .modal-field div{ font-size:13.5px; color:var(--navy); }
+  .modal-close{
+    margin-top:10px; width:100%; padding:10px; border-radius:6px; border:1px solid var(--border);
+    background:#fff; font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">SDM</div>
+      <h1>Data Karyawan</h1>
+    </div>
+    <div class="top-actions">
+      <a class="upload-link" id="uploadLink" href="upload-karyawan.html" style="display:none;">⬆ Upload Data</a>
+      <a class="back-link" href="dashboard.html">← Kembali ke Dashboard</a>
+    </div>
+  </div>
+
+  <div id="loadingCheck" class="wrap"><p style="color:var(--gray-mute); font-size:14px;">Memeriksa akses...</p></div>
+  <div id="denied" class="denied" style="display:none;">
+    <h2>Akses Ditolak</h2>
+    <p>Kamu belum punya akses ke menu SDM. Hubungi administrator kalau ini keliru.</p>
+  </div>
+
+  <div id="gate" class="wrap" style="display:none;">
+    <div class="controls">
+      <input type="text" class="search-box" id="searchBox" placeholder="Cari nama, jabatan, atau wilayah...">
+      <select class="filter-select" id="wilayahFilter"><option value="">Semua Wilayah</option></select>
+    </div>
+    <div class="count-note" id="countNote"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Jabatan</th>
+            <th>Departemen</th>
+            <th>Wilayah</th>
+            <th>Status</th>
+            <th>Tgl Masuk</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">Belum ada data karyawan. Admin bisa unggah lewat halaman Upload Data.</div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3 id="modalName">—</h3>
+      <p class="sub">Data sensitif — hanya terlihat oleh administrator</p>
+      <div class="modal-field"><label>No HP</label><div id="modalHp">—</div></div>
+      <div class="modal-field"><label>Email</label><div id="modalEmail">—</div></div>
+      <div class="modal-field"><label>Alamat</label><div id="modalAlamat">—</div></div>
+      <div class="modal-field"><label>BPJS Kesehatan</label><div id="modalBpjsKes">—</div></div>
+      <div class="modal-field"><label>BPJS Ketenagakerjaan</label><div id="modalBpjsTk">—</div></div>
+      <button class="modal-close" id="modalClose">Tutup</button>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
+      authDomain: "business-admin-center.firebaseapp.com",
+      projectId: "business-admin-center",
+      storageBucket: "business-admin-center.firebasestorage.app",
+      messagingSenderId: "165059982705",
+      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
+      measurementId: "G-TSW82QKX0P"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let isAdmin = false;
+    let allRows = [];
+
+    auth.onAuthStateChanged(async function(user){
+      const loadingEl = document.getElementById('loadingCheck');
+      if(!user){ window.location.href = 'login.html'; return; }
+
+      let userData = null;
+      try{
+        const doc = await db.collection('users').doc(user.uid).get();
+        userData = doc.exists ? doc.data() : null;
+      }catch(e){}
+
+      if(!userData || userData.status === 'pending'){ window.location.href = 'pending.html'; return; }
+
+      isAdmin = userData.role === 'administrator' || userData.role === 'admin';
+      const hasSdm = isAdmin || (userData.permissions && userData.permissions.sdm);
+
+      loadingEl.style.display = 'none';
+      if(!hasSdm){
+        document.getElementById('denied').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('gate').style.display = 'block';
+      if(isAdmin) document.getElementById('uploadLink').style.display = 'inline-block';
+      loadKaryawan();
+    });
+
+    async function loadKaryawan(){
+      const tbody = document.getElementById('tableBody');
+      const emptyState = document.getElementById('emptyState');
+      try{
+        const snap = await db.collection('karyawan').orderBy('nama').get();
+        if(snap.empty){
+          emptyState.style.display = 'block';
+          return;
+        }
+        allRows = [];
+        snap.forEach(doc => allRows.push({ id: doc.id, ...doc.data() }));
+
+        const wilayahSet = [...new Set(allRows.map(r => r.wilayah).filter(Boolean))].sort();
+        const wilayahFilter = document.getElementById('wilayahFilter');
+        wilayahSet.forEach(w => {
+          const opt = document.createElement('option');
+          opt.value = w; opt.textContent = w;
+          wilayahFilter.appendChild(opt);
+        });
+
+        renderTable(allRows);
+      }catch(e){
+        emptyState.style.display = 'block';
+        emptyState.textContent = 'Gagal memuat data: ' + e.message;
+      }
+    }
+
+    function renderTable(rows){
+      const tbody = document.getElementById('tableBody');
+      const countNote = document.getElementById('countNote');
+      tbody.innerHTML = '';
+      countNote.textContent = `Menampilkan ${rows.length} dari ${allRows.length} karyawan.`;
+
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="name-cell">${r.nama || '-'}<div class="sub-cell">${r.nomorKaryawan || ''}</div></td>
+          <td>${r.jobTitle || '-'}<div class="sub-cell">${r.level || ''}</div></td>
+          <td>${r.department || '-'}</td>
+          <td>${r.wilayah || '-'}</td>
+          <td>${r.statusKaryawan || '-'}</td>
+          <td>${r.joinDate || '-'}</td>
+          <td>${isAdmin ? '<button class="btn-detail" data-id="'+r.id+'" data-nama="'+(r.nama||'')+'">Detail</button>' : ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      tbody.querySelectorAll('.btn-detail').forEach(btn => {
+        btn.addEventListener('click', () => openDetail(btn.dataset.id, btn.dataset.nama));
+      });
+    }
+
+    function applyFilters(){
+      const q = document.getElementById('searchBox').value.toLowerCase().trim();
+      const wilayah = document.getElementById('wilayahFilter').value;
+      const filtered = allRows.filter(r => {
+        const matchQ = !q || (r.nama||'').toLowerCase().includes(q) || (r.jobTitle||'').toLowerCase().includes(q) || (r.wilayah||'').toLowerCase().includes(q) || (r.department||'').toLowerCase().includes(q);
+        const matchW = !wilayah || r.wilayah === wilayah;
+        return matchQ && matchW;
+      });
+      renderTable(filtered);
+    }
+    document.getElementById('searchBox').addEventListener('input', applyFilters);
+    document.getElementById('wilayahFilter').addEventListener('change', applyFilters);
+
+    async function openDetail(docId, nama){
+      document.getElementById('modalName').textContent = nama || '—';
+      document.getElementById('modalHp').textContent = 'Memuat...';
+      document.getElementById('modalEmail').textContent = '';
+      document.getElementById('modalAlamat').textContent = '';
+      document.getElementById('modalBpjsKes').textContent = '';
+      document.getElementById('modalBpjsTk').textContent = '';
+      document.getElementById('modalOverlay').classList.add('open');
+
+      try{
+        const doc = await db.collection('karyawan').doc(docId).collection('sensitive').doc('data').get();
+        const d = doc.exists ? doc.data() : {};
+        document.getElementById('modalHp').textContent = d.noHp || '—';
+        document.getElementById('modalEmail').textContent = d.email || '—';
+        document.getElementById('modalAlamat').textContent = d.alamat || '—';
+        document.getElementById('modalBpjsKes').textContent = d.bpjsKes || '—';
+        document.getElementById('modalBpjsTk').textContent = d.bpjsTk || '—';
+      }catch(e){
+        document.getElementById('modalHp').textContent = 'Gagal memuat data.';
+      }
+    }
+    document.getElementById('modalClose').addEventListener('click', () => document.getElementById('modalOverlay').classList.remove('open'));
+    document.getElementById('modalOverlay').addEventListener('click', function(e){
+      if(e.target === this) this.classList.remove('open');
+    });
+  </script>
+</body>
+</html>
