@@ -54,7 +54,7 @@
             align-items: center;
             flex-wrap: wrap;
         }
-        .month-select, .region-select, .search-input {
+        .region-select, .search-input {
             padding: 10px 16px;
             font-size: 14px;
             border: 1px solid #cbd5e1;
@@ -63,7 +63,7 @@
             background: #ffffff;
             box-sizing: border-box;
         }
-        .search-input { width: 220px; }
+        .search-input { width: 240px; }
         .region-select { min-width: 160px; }
 
         .kpi-grid {
@@ -119,9 +119,8 @@
         .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
         .table-data { width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left; white-space: nowrap; }
         
-        .table-data th { padding: 8px 6px; border: 1px solid var(--border); text-align: center; font-weight: 600; }
+        .table-data th { padding: 10px 8px; border: 1px solid var(--border); text-align: center; font-weight: 600; }
         .table-data thead tr.main-header th { background: #f1f5f9; color: var(--primary); font-size: 11px; text-transform: uppercase; font-weight: 700; }
-        .table-data thead tr.sub-header th { background: #f8fafc; color: #475569; font-size: 10.5px; }
         
         .table-data td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
         .num-cell { text-align: right !important; }
@@ -137,37 +136,18 @@
             display: inline-block;
         }
         .badge-normal {
-            background-color: #e2e8f0;
-            color: #475569;
+            background-color: #d1fae5;
+            color: #065f46;
             padding: 2px 6px;
             border-radius: 4px;
+            font-weight: 600;
             font-size: 11px;
-        }
-        .badge-ignore {
-            background-color: #f1f5f9;
-            color: #94a3b8;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-style: italic;
         }
 
         .table-data tr.row-total td { background: var(--bg-light); font-weight: 700; color: var(--primary); border-top: 2px solid #cbd5e1; }
         .table-data tr:hover td { background-color: #fafafa; }
         
         .loading { padding: 60px 20px; text-align: center; font-weight: 600; color: var(--accent); font-size: 15px; }
-
-        @media (max-width: 768px) {
-            body { padding: 12px; }
-            .header-panel { padding: 16px; flex-direction: column; align-items: flex-start; }
-            .filter-group { flex-direction: column; width: 100%; }
-            .search-input, .region-select, .month-select { width: 100% !important; min-width: unset; }
-            .kpi-grid { grid-template-columns: 1fr; gap: 12px; }
-            .kpi-card { padding: 16px; }
-            .kpi-value { font-size: 18px; }
-            .section-card { padding: 16px; }
-            .table-data { font-size: 11px; }
-        }
     </style>
 </head>
 <body>
@@ -176,68 +156,71 @@
     
     <div class="header-panel">
         <div>
-            <h1>Dashboard Monitoring Performance BM</h1>
-            <p>Menampilkan Top 10 BM berdasarkan pencapaian % AMOUNT tertinggi pada grafik.</p>
+            <h1>Dashboard Monitoring Realisasi Disburse BM</h1>
+            <p>Menampilkan Top 10 Branch Manager berdasarkan Nominal Disburse (Actual) tertinggi.</p>
         </div>
         <div class="filter-group">
-            <input type="text" id="searchBar" class="search-input" placeholder="Cari Nama Branch Manager">
-            
+            <input type="text" id="searchBar" class="search-input" placeholder="Cari Nama BM / Area...">
             <select class="region-select" id="regionFilter">
                 <option value="ALL">Semua Wilayah</option>
-            </select>
-
-            <select class="month-select" id="monthFilter">
-                <option value="JAN_2025" selected>Januari 2025</option>
-                <option value="FEB_2025">Februari 2025</option>
-                <option value="MAR_2025">Maret 2025</option>
-                <option value="APR_2025">April 2025</option>
-                <option value="MAY_2025">Mei 2025</option>
-                <option value="JUN_2025">Juni 2025</option>
             </select>
         </div>
     </div>
 
-    <div id="loadingText" class="loading">Memuat data Disburse dari Firebase Firestore...</div>
+    <div id="loadingText" class="loading">Memuat &amp; Menghubungkan ke Koleksi DisburseNational...</div>
 
     <div id="dashboardContentWrapper" style="display: none;">
+        <!-- Ringkasan KPI -->
         <div class="kpi-grid">
             <div class="kpi-card">
-                <div class="kpi-title">Grand Total Budget AMOUNT</div>
-                <div class="kpi-value" id="kpiTargetTotal">-</div>
+                <div class="kpi-title">Total Target Disburse</div>
+                <div class="kpi-value" id="kpiTargetTotal">Rp 0</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Grand Total Actual AMOUNT</div>
-                <div class="kpi-value" id="kpiAcvTotal">-</div>
+                <div class="kpi-title">Total Disburse (Actual)</div>
+                <div class="kpi-value" id="kpiAcvTotal" style="color: var(--success);">Rp 0</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Rata - rata % AMOUNT</div>
-                <div class="kpi-value" id="kpiPctTotal" style="color: var(--accent);">-</div>
+                <div class="kpi-title">Rata-Rata Pencapaian (% Disburse)</div>
+                <div class="kpi-value" id="kpiPctTotal" style="color: var(--accent);">0.00%</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">BM Perlu Review (&lt; 90%)</div>
-                <div class="kpi-value" id="kpiCountSp" style="color: var(--danger);">-</div>
+                <div class="kpi-value" id="kpiCountSp" style="color: var(--danger);">0</div>
             </div>
         </div>
 
+        <!-- Section Visualisasi & Radar -->
         <div class="dashboard-content">
             <div class="section-card">
-                <h3 id="chartTitle">Visualisasi Capaian % AMOUNT BM (Top 10)</h3>
+                <h3>Visualisasi Top 10 Disburse / Actual BM</h3>
                 <div style="position: relative; height: 320px; width: 100%;">
-                    <canvas id="performanceChart"></canvas>
+                    <canvas id="disburseChart"></canvas>
                 </div>
             </div>
             
             <div class="section-card">
-                <h3>⚠️ Radar Perhatian Target Anggaran ( &lt; 90%)</h3>
+                <h3>⚠️ Radar Perhatian Target Disburse (&lt; 90%)</h3>
                 <div class="compliance-list" id="spListWrapper"></div>
             </div>
         </div>
 
+        <!-- Tabel Rekapitulasi -->
         <div class="section-card">
-            <h3 id="tableTitle">Rekapitulasi Pencapaian Target Bulanan</h3>
+            <h3>Rekapitulasi Disburse Branch Manager</h3>
             <div class="table-wrapper">
                 <table class="table-data">
-                    <thead id="tableHeadContainer"></thead>
+                    <thead>
+                        <tr class="main-header">
+                            <th style="width: 40px;">No</th>
+                            <th>Nama Branch Manager</th>
+                            <th>Wilayah / Area</th>
+                            <th>Budget (Target)</th>
+                            <th>Actual (Disburse)</th>
+                            <th>% Ach</th>
+                            <th style="width: 100px;">Status</th>
+                        </tr>
+                    </thead>
                     <tbody id="tableBody"></tbody>
                     <tfoot id="tableFoot"></tfoot>
                 </table>
@@ -249,11 +232,9 @@
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
 <script>
-    // Config Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
       authDomain: "business-admin-center.firebaseapp.com",
@@ -266,14 +247,15 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let rawFirestoreDocs = [];
-    let processedKaryawan = [];
-    let chartInstance = null;
+    let rawDataList = [];
+    let processedBMData = [];
+    let disburseChartInstance = null;
 
-    // Utility Parsers
-    function parseNum(val) {
+    // Helper: Konversi Nilai Apapun Menjadi Angka Murni
+    function cleanNumber(val) {
         if (val === undefined || val === null || val === "") return 0;
         if (typeof val === 'number') return val;
+        
         let str = val.toString().trim().replace(/Rp\s?/g, '');
         if (str.includes('.') && str.includes(',')) {
             str = str.replace(/\./g, '').replace(/,/g, '.');
@@ -288,256 +270,235 @@
         return parseFloat(str) || 0;
     }
 
-    function parsePercent(val) {
-        if (val === undefined || val === null || val === "") return { num: 0, text: '0.00%' };
-        let str = val.toString().trim();
-        let num = parseFloat(str.replace(/%/g, '').replace(/,/g, '.')) || 0;
-        if (typeof val === 'number' && val <= 1.0) {
-            num = val * 100;
-        }
-        return { num: num, text: num.toFixed(2) + '%' };
-    }
-
-    function formatMataUang(number) {
-        return parseFloat(number).toLocaleString('id-ID', {
+    function formatRupiah(num) {
+        return "Rp " + parseFloat(num).toLocaleString('id-ID', {
             minimumFractionDigits: 0,
-            maximumFractionDigits: 2 
+            maximumFractionDigits: 0
         });
     }
 
-    // Inisialisasi Ambil Data dari Firestore
-    async function initFirestoreFetch() {
+    // Helper: Mencari Nilai dari Berbagai Variasi Nama Field Firestore
+    function getFieldValue(doc, possibleKeys) {
+        for (let key of possibleKeys) {
+            for (let docKey in doc) {
+                if (docKey.trim().toLowerCase() === key.toLowerCase()) {
+                    return doc[docKey];
+                }
+            }
+        }
+        return null;
+    }
+
+    // Ambil Data Firestore
+    async function loadDisburseFromFirestore() {
         document.getElementById('loadingText').style.display = 'block';
         document.getElementById('dashboardContentWrapper').style.display = 'none';
 
         try {
             const snapshot = await db.collection('DisburseNational').get();
-            rawFirestoreDocs = [];
+            rawDataList = [];
+            
             snapshot.forEach(doc => {
-                rawFirestoreDocs.push(doc.data());
+                rawDataList.push(doc.data());
             });
 
+            if(rawDataList.length === 0) {
+                document.getElementById('loadingText').innerHTML = "⚠️ Koleksi 'DisburseNational' kosong di Firestore.";
+                return;
+            }
+
+            processData();
             document.getElementById('loadingText').style.display = 'none';
             document.getElementById('dashboardContentWrapper').style.display = 'block';
-            
-            processAndRender();
         } catch (err) {
-            document.getElementById('loadingText').innerHTML = `Gagal memuat data dari Firebase Firestore: ${err.message}`;
             console.error(err);
+            document.getElementById('loadingText').innerHTML = `Gagal memuat data Firestore: ${err.message}`;
         }
     }
 
-    // Pemrosesan Data Firestore
-    function processAndRender() {
-        if (rawFirestoreDocs.length === 0) return;
+    // Olah Data Firestore
+    function processData() {
+        processedBMData = rawDataList.map(doc => {
+            // Ambil Nama BM
+            let nama = getFieldValue(doc, ['NAMA BM', 'NAMA_BM', 'BM', 'NAME']) || '-';
+            if (nama === '-' || nama.toLowerCase().includes('total')) return null;
 
-        const monthSelect = document.getElementById('monthFilter');
-        const selectedMonthKey = monthSelect.value; // Contoh: JAN_2025
-        const selectedMonthText = monthSelect.options[monthSelect.selectedIndex].text;
+            // Ambil Wilayah
+            let wilayah = getFieldValue(doc, ['WILAYAH EXISTING', 'WILAYAH', 'AREA', 'REGIONAL', 'REG']) || 'Lainnya';
 
-        processedKaryawan = rawFirestoreDocs.map(doc => {
-            let namaBM = (doc['NAMA BM'] || doc['NAMA_BM'] || "").toString().trim();
-            if (!namaBM || namaBM.toLowerCase() === 'total') return null;
+            // Ambil Budget (Target)
+            let rawBudget = getFieldValue(doc, ['JAN 2025 BUDGET', 'JAN_2025_BUDGET_AMOUNT', 'BUDGET', 'TARGET']);
+            let budget = cleanNumber(rawBudget);
 
-            let regionVal = (doc['WILAYAH EXISTING'] || doc['WILAYAH'] || doc['AREA'] || 'Tanpa Wilayah').toString().trim();
+            // Ambil Actual (Disburse)
+            let rawActual = getFieldValue(doc, ['JAN 2025 ACTUAL', 'JAN_2025_ACTUAL_AMOUNT', 'ACTUAL', 'DISBURSE', 'REALISASI']);
+            let actual = cleanNumber(rawActual);
+
+            // Ambil atau Hitung % Ach
+            let rawAch = getFieldValue(doc, ['Unnamed: 14', '% AMOUNT', 'ACH', 'PENCAPAIAN', '%']);
+            let pctAch = cleanNumber(rawAch);
             
-            // Mencari field dinamis berdasarkan prefix bulan
-            let bNoa = parseNum(doc[`${selectedMonthKey}_BUDGET_NOA`] || doc[` ${selectedMonthKey.replace('_', ' ')} BUDGET NOA`] || doc['NOA_BUDGET'] || 0);
-            let bAmount = parseNum(doc[`${selectedMonthKey}_BUDGET_AMOUNT`] || doc[` ${selectedMonthKey.replace('_', ' ')} BUDGET`] || doc['JAN_2025_BUDGET_AMOUNT'] || 0);
-            let jumlahAO = doc['AO'] || doc['JUMLAH_AO'] || doc['Jumlah AO'] || '-';
-            
-            let aNoa = parseNum(doc[`${selectedMonthKey}_ACTUAL_NOA`] || doc[` ${selectedMonthKey.replace('_', ' ')} ACTUAL NOA`] || doc['NOA_ACTUAL'] || 0);
-            let aPctNoa = parsePercent(doc[`${selectedMonthKey}_PCT_NOA`] || doc['% NOA'] || 0);
-            let aAmount = parseNum(doc[`${selectedMonthKey}_ACTUAL_AMOUNT`] || doc[` ${selectedMonthKey.replace('_', ' ')} ACTUAL`] || doc['JAN_2025_ACTUAL_AMOUNT'] || 0);
-            let aPctAmount = parsePercent(doc[`${selectedMonthKey}_PCT_AMOUNT`] || doc['Unnamed: 14'] || doc['% AMOUNT'] || 0);
-
-            // Hitung otomatis % Amount jika di Firestore belum ada
-            if (aPctAmount.num === 0 && bAmount > 0) {
-                let calcPct = (aAmount / bAmount) * 100;
-                aPctAmount = { num: calcPct, text: calcPct.toFixed(2) + '%' };
+            if (pctAch === 0 && budget > 0) {
+                pctAch = (actual / budget) * 100;
             }
 
             return {
-                nama: namaBM,
-                wilayah: regionVal,
-                bNoa: bNoa,
-                bAmount: bAmount,
-                ao: jumlahAO,
-                aNoa: aNoa,
-                aPctNoaStr: aPctNoa.text,
-                aAmount: aAmount,
-                aPctAmountNum: aPctAmount.num,
-                aPctAmountStr: aPctAmount.text
+                nama: nama,
+                wilayah: wilayah.toString().trim(),
+                budget: budget,
+                actual: actual, // ACTUAL = DISBURSE
+                pctAch: pctAch
             };
         }).filter(item => item !== null);
 
-        // Update Filter Wilayah
-        const regionSelect = document.getElementById('regionFilter');
-        const currentSelectedRegion = regionSelect.value;
-        let wilayahSet = new Set();
-        processedKaryawan.forEach(item => { if(item.wilayah) wilayahSet.add(item.wilayah); });
-        
-        let optionsHtml = '<option value="ALL">Semua Wilayah</option>';
-        Array.from(wilayahSet).sort().forEach(wil => {
-            optionsHtml += `<option value="${wil}">${wil}</option>`;
-        });
-        regionSelect.innerHTML = optionsHtml;
-        if(Array.from(wilayahSet).includes(currentSelectedRegion)) regionSelect.value = currentSelectedRegion;
-
-        applyFiltersAndRender(selectedMonthText);
+        populateRegionFilter();
+        renderDashboard();
     }
 
-    function applyFiltersAndRender(monthLabel) {
-        const txt = document.getElementById('searchBar').value.toLowerCase().trim();
+    // Isi Dropdown Filter Wilayah
+    function populateRegionFilter() {
+        const regionSelect = document.getElementById('regionFilter');
+        let currentSelection = regionSelect.value;
+        let setWilayah = new Set();
+
+        processedBMData.forEach(i => { if(i.wilayah) setWilayah.add(i.wilayah); });
+
+        let html = '<option value="ALL">Semua Wilayah</option>';
+        Array.from(setWilayah).sort().forEach(w => {
+            html += `<option value="${w}">${w}</option>`;
+        });
+        regionSelect.innerHTML = html;
+        if(Array.from(setWilayah).includes(currentSelection)) regionSelect.value = currentSelection;
+    }
+
+    // Render Tabel, KPI, & Grafik
+    function renderDashboard() {
+        const searchTxt = document.getElementById('searchBar').value.toLowerCase().trim();
         const selectedRegion = document.getElementById('regionFilter').value;
-        
-        const filtered = processedKaryawan.filter(item => {
-            const matchName = item.nama.toLowerCase().includes(txt);
-            const matchRegion = (selectedRegion === 'ALL' || item.wilayah === selectedRegion);
+
+        const filtered = processedBMData.filter(item => {
+            let matchName = item.nama.toLowerCase().includes(searchTxt) || item.wilayah.toLowerCase().includes(searchTxt);
+            let matchRegion = (selectedRegion === 'ALL' || item.wilayah === selectedRegion);
             return matchName && matchRegion;
         });
 
-        document.getElementById('tableTitle').innerText = `Matriks Rekapitulasi Target vs Realisasi - ${monthLabel}`;
-        document.getElementById('chartTitle').innerText = `Visualisasi Capaian % AMOUNT BM (Top 10 Tertinggi) - ${monthLabel}`;
-
-        let totalBNoa = 0, totalBAmount = 0, totalANoa = 0, totalAAmount = 0, countSp = 0;
+        let totalBudget = 0;
+        let totalActual = 0;
+        let countLow = 0;
         let tableHtml = '';
         let spListHtml = '';
-        let minAch = 90.0; 
-
-        let headHtml = `
-            <tr class="main-header">
-                <th rowspan="2" style="width: 40px;">No</th>
-                <th rowspan="2">Nama Branch Manager</th>
-                <th rowspan="2">Wilayah</th>
-                <th colspan="2">BUDGET (${monthLabel})</th>
-                <th rowspan="2" style="background: #eff6ff;">Jumlah AO</th>
-                <th colspan="4">ACTUAL (${monthLabel})</th>
-                <th rowspan="2" style="width: 100px;">Status</th>
-            </tr>
-            <tr class="sub-header">
-                <th>NOA</th>
-                <th>AMOUNT</th>
-                <th>NOA</th>
-                <th>% NOA</th>
-                <th>AMOUNT</th>
-                <th>% AMOUNT</th>
-            </tr>
-        `;
-        document.getElementById('tableHeadContainer').innerHTML = headHtml;
 
         filtered.forEach((item, index) => {
-            totalBNoa += item.bNoa;
-            totalBAmount += item.bAmount;
-            totalANoa += item.aNoa;
-            totalAAmount += item.aAmount;
+            totalBudget += item.budget;
+            totalActual += item.actual;
 
-            let isNoTarget = (item.bAmount === 0);
-            let isLowPerformance = !isNoTarget && (item.aPctAmountNum < minAch);
-            let styleAchAmount = isLowPerformance ? "font-weight:700; color:var(--danger);" : (isNoTarget ? "color:#94a3b8;" : "font-weight:600; color:var(--success);");
-
-            let statusBadge = `<span class="badge-normal">On Track</span>`;
-            if (isNoTarget) {
-                statusBadge = `<span class="badge-ignore">No Target</span>`;
-            } else if (isLowPerformance) {
-                countSp++;
-                statusBadge = `<span class="badge-sp">Perlu Review</span>`;
+            let isLow = item.pctAch < 90 && item.budget > 0;
+            if (isLow) {
+                countLow++;
                 spListHtml += `
                     <div class="compliance-item">
                         <div class="name">${item.nama} (${item.wilayah})</div>
-                        <div class="sp-status">⚠️ Pencapaian wilayah di bawah 90%</div>
-                        <div style="font-size: 11px; color: #7f1d1d; margin-top: 2px;">Capaian Aktual: ${item.aPctAmountStr} (Batas minimal ${minAch}%)</div>
+                        <div class="sp-status">⚠️ Disburse di bawah target (< 90%)</div>
+                        <div style="font-size: 11px; color: #7f1d1d; margin-top: 2px;">
+                            Capaian Disburse: <strong>${formatRupiah(item.actual)}</strong> (${item.pctAch.toFixed(2)}%)
+                        </div>
                     </div>
                 `;
             }
+
+            let achStyle = isLow ? "color:var(--danger); font-weight:700;" : "color:var(--success); font-weight:600;";
+            let statusBadge = isLow ? `<span class="badge-sp">Perlu Review</span>` : `<span class="badge-normal">On Track</span>`;
 
             tableHtml += `
                 <tr>
                     <td class="center-cell" style="color: #64748b;">${index + 1}</td>
                     <td style="font-weight:600; color:var(--primary);">${item.nama}</td>
                     <td><strong>${item.wilayah}</strong></td>
-                    <td class="num-cell">${formatMataUang(item.bNoa)}</td>
-                    <td class="num-cell">${formatMataUang(item.bAmount)}</td>
-                    <td class="center-cell" style="background: #f8fafc; font-weight: 600; color: var(--accent);">${item.ao}</td>
-                    <td class="num-cell">${formatMataUang(item.aNoa)}</td>
-                    <td class="num-cell" style="font-weight:500;">${isNoTarget ? '0.00%' : item.aPctNoaStr}</td>
-                    <td class="num-cell">${formatMataUang(item.aAmount)}</td>
-                    <td class="num-cell" style="${styleAchAmount}">${isNoTarget ? '0.00%' : item.aPctAmountStr}</td>
+                    <td class="num-cell">${formatRupiah(item.budget)}</td>
+                    <td class="num-cell" style="font-weight:600;">${formatRupiah(item.actual)}</td>
+                    <td class="num-cell" style="${achStyle}">${item.pctAch.toFixed(2)}%</td>
                     <td class="center-cell">${statusBadge}</td>
                 </tr>
             `;
         });
 
-        document.getElementById('tableBody').innerHTML = tableHtml || `<tr><td colspan="11" style="text-align:center; padding:30px;">Data tidak ditemukan.</td></tr>`;
-        document.getElementById('spListWrapper').innerHTML = spListHtml || '<div style="color:#64748b; font-size:13px; text-align:center; padding:25px;">✅ Seluruh Branch Manager berada di zona aman (&ge; 90%).</div>';
+        document.getElementById('tableBody').innerHTML = tableHtml || `<tr><td colspan="7" style="text-align:center; padding:30px;">Data tidak ditemukan.</td></tr>`;
+        document.getElementById('spListWrapper').innerHTML = spListHtml || '<div style="color:#64748b; font-size:13px; text-align:center; padding:25px;">✅ Seluruh BM telah mencapai target Disburse (≥ 90%).</div>';
 
-        let avgPctNoa = totalBNoa > 0 ? (totalANoa / totalBNoa) * 100 : 0;
-        let avgPctAmount = totalBAmount > 0 ? (totalAAmount / totalBAmount) * 100 : 0;
+        // Update KPI
+        let avgPct = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0;
+        document.getElementById('kpiTargetTotal').innerText = formatRupiah(totalBudget);
+        document.getElementById('kpiAcvTotal').innerText = formatRupiah(totalActual);
+        document.getElementById('kpiPctTotal').innerText = avgPct.toFixed(2) + '%';
+        document.getElementById('kpiCountSp').innerText = `${countLow} BM`;
 
-        let footHtml = `
+        // Update Footer Tabel
+        document.getElementById('tableFoot').innerHTML = `
             <tr class="row-total">
                 <td colspan="3" class="center-cell">TOTAL KESELURUHAN</td>
-                <td class="num-cell">${formatMataUang(totalBNoa)}</td>
-                <td class="num-cell">${formatMataUang(totalBAmount)}</td>
-                <td class="center-cell" style="background: #e2e8f0;">-</td>
-                <td class="num-cell">${formatMataUang(totalANoa)}</td>
-                <td class="num-cell">${avgPctNoa.toFixed(2)}%</td>
-                <td class="num-cell">${formatMataUang(totalAAmount)}</td>
-                <td class="num-cell" style="color: var(--accent);">${avgPctAmount.toFixed(2)}%</td>
+                <td class="num-cell">${formatRupiah(totalBudget)}</td>
+                <td class="num-cell">${formatRupiah(totalActual)}</td>
+                <td class="num-cell" style="color:var(--accent);">${avgPct.toFixed(2)}%</td>
                 <td></td>
             </tr>
         `;
-        document.getElementById('tableFoot').innerHTML = footHtml;
 
-        document.getElementById('kpiTargetTotal').innerText = "Rp " + formatMataUang(totalBAmount);
-        document.getElementById('kpiAcvTotal').innerText = "Rp " + formatMataUang(totalAAmount);
-        document.getElementById('kpiPctTotal').innerText = avgPctAmount.toFixed(2) + '%';
-        document.getElementById('kpiCountSp').innerText = `${countSp} Branch Manager`;
-
-        const sortedDataForChart = [...filtered].sort((a, b) => b.aPctAmountNum - a.aPctAmountNum);
-        
-        const top10Labels = sortedDataForChart.slice(0, 10).map(item => `${item.nama} (${item.wilayah})`);
-        const top10Values = sortedDataForChart.slice(0, 10).map(item => item.aPctAmountNum);
-
-        renderChart(top10Labels, top10Values);
+        // Render Grafik Top 10 Disburse
+        const top10Data = [...filtered].sort((a, b) => b.actual - a.actual).slice(0, 10);
+        renderDisburseChart(top10Data);
     }
 
-    function renderChart(labels, datasetData) {
-        const ctx = document.getElementById('performanceChart').getContext('2d');
-        if (chartInstance) { chartInstance.destroy(); }
+    // Grafik Chart.js
+    function renderDisburseChart(topData) {
+        const ctx = document.getElementById('disburseChart').getContext('2d');
+        if (disburseChartInstance) { disburseChartInstance.destroy(); }
 
-        chartInstance = new Chart(ctx, {
+        const labels = topData.map(i => `${i.nama} (${i.wilayah})`);
+        const values = topData.map(i => i.actual);
+
+        disburseChartInstance = new Chart(ctx, {
             type: 'bar',
-            data: { 
-                labels: labels, 
+            data: {
+                labels: labels,
                 datasets: [{
-                    label: '% AMOUNT (Top 10)', 
-                    data: datasetData, 
-                    backgroundColor: '#10b981', 
-                    borderRadius: 4 
-                }] 
+                    label: 'Actual Disburse (Rp)',
+                    data: values,
+                    backgroundColor: '#2563eb',
+                    borderRadius: 6
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
-                scales: { y: { ticks: { callback: value => value + '%' } } }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Disburse: ' + formatRupiah(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return 'Rp ' + (value / 1000000).toLocaleString('id-ID') + ' Jt';
+                            }
+                        }
+                    }
+                }
             }
         });
     }
 
-    document.getElementById('monthFilter').addEventListener('change', processAndRender);
-    document.getElementById('regionFilter').addEventListener('change', () => {
-        const monthSelect = document.getElementById('monthFilter');
-        applyFiltersAndRender(monthSelect.options[monthSelect.selectedIndex].text);
-    });
-    document.getElementById('searchBar').addEventListener('input', () => {
-        const monthSelect = document.getElementById('monthFilter');
-        applyFiltersAndRender(monthSelect.options[monthSelect.selectedIndex].text);
-    });
+    // Event Listeners Filter
+    document.getElementById('searchBar').addEventListener('input', renderDashboard);
+    document.getElementById('regionFilter').addEventListener('change', renderDashboard);
 
-    // Panggil Firestore saat halaman terbuka
-    initFirestoreFetch();
+    // Jalankan Saat Halaman Dimuat
+    loadDisburseFromFirestore();
 </script>
 </body>
 </html>
