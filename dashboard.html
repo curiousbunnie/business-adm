@@ -408,7 +408,7 @@
       });
     });
 
-    // Submenu Accordion Toggle General
+    // Submenu Accordion Toggle
     document.querySelectorAll('.menu-link[data-toggle]').forEach(function(el){
       el.addEventListener('click', function(){
         el.closest('.menu-group').classList.toggle('open');
@@ -433,7 +433,7 @@
       document.getElementById('navHome').classList.add('active');
     }
 
-    // FUNGSI UTAMA UNTUK MENGIRIM PERINTAH FILTER KE DALAM IFRAME
+    // FUNGSI UTAMA UNTUK FILTER DISBURSE (MENGGUNAKAN DUA METODE SEKALIGUS BIAR GAK MISSED)
     function openDisbursePage(region, targetEl) {
       document.getElementById('homeView').classList.remove('active');
       const iframeContainer = document.getElementById('disburseFrameView');
@@ -449,28 +449,31 @@
         targetEl.classList.add('active');
       }
 
-      // 1. Jika iframe belum dimuat, muat file DisburseNational.html
-      if (iframe.src === "about:blank" || !iframe.src.includes('DisburseNational.html')) {
-        iframe.src = 'DisburseNational.html';
-        iframe.onload = function() {
-          sendFilterToIframe(region);
-        };
-      } else {
-        // 2. Jika iframe sudah dimuat sebelumnya, langsung panggil fungsinya
-        sendFilterToIframe(region);
-      }
-    }
+      const encodedRegion = encodeURIComponent(region);
+      const targetSrc = `DisburseNational.html?region=${encodedRegion}`;
 
-    // Mengirim instruksi ke function openDisbursePage() milik file DisburseNational.html
-    function sendFilterToIframe(region) {
-      const iframe = document.getElementById('disburseIframe');
+      // 1. Kirim via URL Parameter (Reload URL Iframe)
+      if (iframe.src !== targetSrc) {
+        iframe.src = targetSrc;
+      }
+
+      // 2. Kirim via Direct Execution (Jika iframe sudah selesai load)
+      iframe.onload = function() {
+        try {
+          if (iframe.contentWindow && typeof iframe.contentWindow.openDisbursePage === 'function') {
+            iframe.contentWindow.openDisbursePage(region);
+          }
+        } catch (e) {
+          console.log("Menunggu iframe siap...", e);
+        }
+      };
+
+      // Jika iframe sudah ada sebelumnya, eksekusi langsung tanpa nunggu reload
       try {
         if (iframe.contentWindow && typeof iframe.contentWindow.openDisbursePage === 'function') {
           iframe.contentWindow.openDisbursePage(region);
         }
-      } catch (e) {
-        console.error("Gagal mengirim filter ke iframe:", e);
-      }
+      } catch (e) {}
     }
 
     function clearActiveMenu() {
