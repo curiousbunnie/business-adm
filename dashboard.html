@@ -277,13 +277,13 @@
 
       <!-- Menu Disburse -->
       <div class="menu-group open">
-        <div class="menu-link" data-toggle onclick="openDisbursePage('ALL')" style="cursor: pointer;">
-          <span>Disburse</span><span class="chevron">›</span>
+        <div class="menu-link" id="navDisburseMain" onclick="openDisbursePage('ALL', this)" style="cursor: pointer;">
+          <span>Disburse</span><span class="chevron" onclick="event.stopPropagation(); toggleGroup(this)">›</span>
         </div>
         <ul class="submenu">
-          <li><a id="navReg1" onclick="openDisbursePage('Regional 1')">Regional 1</a></li>
-          <li><a id="navReg2" onclick="openDisbursePage('Regional 2')">Regional 2</a></li>
-          <li><a id="navJava" onclick="openDisbursePage('Java')">Java</a></li>
+          <li><a id="navReg1" onclick="openDisbursePage('Regional 1', this)">Regional 1</a></li>
+          <li><a id="navReg2" onclick="openDisbursePage('Regional 2', this)">Regional 2</a></li>
+          <li><a id="navJava" onclick="openDisbursePage('Java', this)">Java</a></li>
         </ul>
       </div>
 
@@ -408,12 +408,16 @@
       });
     });
 
-    // Submenu Accordion Toggle
+    // Submenu Accordion Toggle General
     document.querySelectorAll('.menu-link[data-toggle]').forEach(function(el){
       el.addEventListener('click', function(){
         el.closest('.menu-group').classList.toggle('open');
       });
     });
+
+    function toggleGroup(chevronEl) {
+      chevronEl.closest('.menu-group').classList.toggle('open');
+    }
 
     // Tanggal Hari Ini
     document.getElementById('todayDate').textContent = new Date().toLocaleDateString('id-ID', {
@@ -429,20 +433,44 @@
       document.getElementById('navHome').classList.add('active');
     }
 
-    // Fungsi Membuka File DisburseNational.html
-    function openDisbursePage(region) {
+    // FUNGSI UTAMA UNTUK MENGIRIM PERINTAH FILTER KE DALAM IFRAME
+    function openDisbursePage(region, targetEl) {
       document.getElementById('homeView').classList.remove('active');
       const iframeContainer = document.getElementById('disburseFrameView');
       const iframe = document.getElementById('disburseIframe');
 
-      // Set src iframe ke file DisburseNational.html
-      if (iframe.src === "about:blank" || !iframe.src.includes('DisburseNational.html')) {
-        iframe.src = 'DisburseNational.html';
+      iframeContainer.classList.add('active');
+      
+      let titleLabel = (region === 'ALL') ? 'Nasional (Semua Regional)' : region;
+      document.getElementById('topbarTitle').textContent = `Disburse — ${titleLabel}`;
+
+      clearActiveMenu();
+      if(targetEl) {
+        targetEl.classList.add('active');
       }
 
-      iframeContainer.classList.add('active');
-      document.getElementById('topbarTitle').textContent = `Disburse — ${region}`;
-      clearActiveMenu();
+      // 1. Jika iframe belum dimuat, muat file DisburseNational.html
+      if (iframe.src === "about:blank" || !iframe.src.includes('DisburseNational.html')) {
+        iframe.src = 'DisburseNational.html';
+        iframe.onload = function() {
+          sendFilterToIframe(region);
+        };
+      } else {
+        // 2. Jika iframe sudah dimuat sebelumnya, langsung panggil fungsinya
+        sendFilterToIframe(region);
+      }
+    }
+
+    // Mengirim instruksi ke function openDisbursePage() milik file DisburseNational.html
+    function sendFilterToIframe(region) {
+      const iframe = document.getElementById('disburseIframe');
+      try {
+        if (iframe.contentWindow && typeof iframe.contentWindow.openDisbursePage === 'function') {
+          iframe.contentWindow.openDisbursePage(region);
+        }
+      } catch (e) {
+        console.error("Gagal mengirim filter ke iframe:", e);
+      }
     }
 
     function clearActiveMenu() {
