@@ -67,10 +67,12 @@
   <div id="gate" class="wrap" style="display:none;">
     <div class="card">
       <h2>Unggah Database SDM</h2>
-      <p class="desc">Unggah file Excel dengan format yang sama seperti "UPDATE KARYAWAN WILAYAH". Sistem otomatis memisahkan data — info dasar bisa dilihat staff yang punya akses SDM, sementara No HP, Email, Alamat, dan BPJS hanya bisa dilihat administrator.</p>
+      <p class="desc">Unggah file Excel dengan 3 sheet: <strong>Database SDM AKTIF</strong>, <strong>TERMINASI</strong>, dan <strong>Mutasi</strong>. Sistem otomatis memproses ketiganya sekaligus dan memisahkan data sensitif sesuai levelnya masing-masing.</p>
 
       <div class="privacy-note">
-        🔒 Data sensitif (No HP, Email, Alamat, BPJS-KES, BPJS-TK) otomatis disimpan terpisah dan hanya bisa dibaca akun administrator — staff SDM tidak akan bisa mengaksesnya sama sekali, bahkan lewat database langsung.
+        🔒 Karyawan aktif: info dasar bisa dilihat staff SDM, data sensitif (HP/Email/Alamat/BPJS) khusus administrator.<br>
+        🔒 Karyawan terminasi: seluruh data khusus administrator, tidak terlihat oleh staff SDM.<br>
+        🔒 Mutasi: riwayat jabatan/wilayah bisa dilihat staff SDM, kolom Penyesuaian Gaji khusus administrator.
       </div>
 
       <div class="drop-zone" id="dropZone">
@@ -105,7 +107,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let parsedRows = [];
+    let parsedRows = { aktif: [], terminasi: [], mutasi: [] };
 
     auth.onAuthStateChanged(async function(user){
       const loadingEl = document.getElementById('loadingCheck');
@@ -146,6 +148,11 @@
       return String(val);
     }
 
+    function findSheet(workbook, keyword){
+      const name = workbook.SheetNames.find(n => n.toLowerCase().includes(keyword.toLowerCase()));
+      return name ? workbook.Sheets[name] : null;
+    }
+
     function handleFile(file){
       document.getElementById('fileName').style.display = 'block';
       document.getElementById('fileName').textContent = '📎 ' + file.name;
@@ -154,11 +161,10 @@
       reader.onload = function(e){
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array', cellDates: false });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        // Baris pertama di file ini kosong/judul, header sebenarnya di baris ke-2 (index 1)
-        const rows = XLSX.utils.sheet_to_json(sheet, { range: 1, defval: '' });
 
-        parsedRows = rows
+        // --- Sheet 1: Karyawan Aktif ---
+        const aktifSheet = findSheet(workbook, 'aktif') || workbook.Sheets[workbook.SheetNames[0]];
+        const aktifRows = XLSX.utils.sheet_to_json(aktifSheet, { range: 1, defval: '' })
           .filter(r => String(r['NOMOR KARYAWAN'] || '').trim())
           .map(r => ({
             basic: {
@@ -188,9 +194,62 @@
             }
           }));
 
+        // --- Sheet 2: Terminasi (semua field jadi satu, admin-only) ---
+        const terminasiSheet = findSheet(workbook, 'terminasi');
+        const terminasiRows = terminasiSheet ? XLSX.utils.sheet_to_json(terminasiSheet, { range: 1, defval: '' })
+          .filter(r => String(r['NAMA KARYAWAN'] || '').trim())
+          .map(r => ({
+            nomorKaryawan: String(r['NOMOR KARYAWAN'] || r['NOMOR KARYAWAN.1'] || '').trim(),
+            nama: String(r['NAMA KARYAWAN'] || '').trim(),
+            perusahaan: String(r['PERUSAHAAN'] || '').trim(),
+            joinDate: excelDateToStr(r['JOIN DATE']),
+            jobTitle: String(r['JOB TITLE'] || '').trim(),
+            department: String(r['DEPARTMENT'] || '').trim(),
+            wilayah: String(r['WILAYAH'] || '').trim(),
+            noHp: String(r['NO HP'] || '').trim(),
+            email: String(r['EMAIL'] || '').trim(),
+            alamat: String(r['ALAMAT'] || '').trim(),
+            bpjsKes: String(r['BPJS-KES'] || '').trim(),
+            bpjsTk: String(r['BPJS-TK'] || '').trim(),
+            alasanTerminasi: String(r['ALASAN TERMINASI'] || '').trim(),
+            masaResign: String(r['MASA RESIGN'] || '').trim(),
+            status: String(r['STATUS'] || '').trim()
+          })) : [];
+
+        // --- Sheet 3: Mutasi ---
+        const mutasiSheet = findSheet(workbook, 'mutasi');
+        const mutasiRows = mutasiSheet ? XLSX.utils.sheet_to_json(mutasiSheet, { range: 1, defval: '' })
+          .filter(r => String(r['Nama'] || '').trim())
+          .map((r, idx) => ({
+            basic: {
+              nomorKaryawan: String(r['Nomor Karyawan'] || '').trim(),
+              nama: String(r['Nama'] || '').trim(),
+              jabatanSebelum: String(r['Jabatan Sebelum'] || '').trim(),
+              wilayahSebelum: String(r['WILAYAH SEBELUM'] || '').trim(),
+              jabatanSesudah: String(r['Jabatan Sesudah'] || '').trim(),
+              wilayahSesudah: String(r['WILAYAH SESUDAH'] || '').trim(),
+              effectiveDate: excelDateToStr(r['Effective Date']),
+              endDate: excelDateToStr(r['End Date']),
+              notes: String(r['Notes'] || '').trim(),
+              lamaMenjabat: String(r['Lama Menjabat'] || '').trim(),
+              status: String(r['Status'] || '').trim(),
+              perusahaan: String(r['Perusahaan'] || '').trim()
+            },
+            sensitive: {
+              penyesuaianGaji: String(r['Penyesuaian Gaji'] || '').trim()
+            },
+            _rowIndex: idx
+          })) : [];
+
+        parsedRows = { aktif: aktifRows, terminasi: terminasiRows, mutasi: mutasiRows };
+
+        const parts = [];
+        parts.push(`${aktifRows.length} karyawan aktif`);
+        if(terminasiSheet) parts.push(`${terminasiRows.length} data terminasi`);
+        if(mutasiSheet) parts.push(`${mutasiRows.length} riwayat mutasi`);
         document.getElementById('previewCount').style.display = 'block';
-        document.getElementById('previewCount').textContent = `Terdeteksi ${parsedRows.length} baris data karyawan siap diunggah.`;
-        document.getElementById('uploadBtn').disabled = parsedRows.length === 0;
+        document.getElementById('previewCount').textContent = 'Terdeteksi: ' + parts.join(', ') + '.';
+        document.getElementById('uploadBtn').disabled = aktifRows.length === 0;
       };
       reader.readAsArrayBuffer(file);
     }
@@ -205,10 +264,20 @@
       statusEl.style.display = 'none';
       progressBar.style.display = 'block';
 
-      const CHUNK = 200; // aman di bawah limit 500 write/batch (2 write per karyawan)
+      const CHUNK = 200;
+      const { aktif, terminasi, mutasi } = parsedRows;
+      const totalSteps = Math.ceil(aktif.length / CHUNK) + Math.ceil(terminasi.length / CHUNK) + Math.ceil(mutasi.length / CHUNK);
+      let doneSteps = 0;
+
+      function bump(){
+        doneSteps++;
+        progressFill.style.width = Math.round(doneSteps / Math.max(totalSteps,1) * 100) + '%';
+      }
+
       try{
-        for(let i = 0; i < parsedRows.length; i += CHUNK){
-          const chunk = parsedRows.slice(i, i + CHUNK);
+        // 1. Karyawan aktif -> karyawan/{id} + karyawan/{id}/sensitive/data
+        for(let i = 0; i < aktif.length; i += CHUNK){
+          const chunk = aktif.slice(i, i + CHUNK);
           const batch = db.batch();
           chunk.forEach(row => {
             const docId = row.basic.nomorKaryawan.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -218,11 +287,41 @@
             batch.set(sensRef, { ...row.sensitive, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
           });
           await batch.commit();
-          const pct = Math.round(Math.min(i + CHUNK, parsedRows.length) / parsedRows.length * 100);
-          progressFill.style.width = pct + '%';
+          bump();
         }
 
-        statusEl.textContent = `Berhasil menyimpan ${parsedRows.length} data karyawan.`;
+        // 2. Terminasi -> karyawan_terminasi/{id} (semua field, admin-only lewat rules default)
+        for(let i = 0; i < terminasi.length; i += CHUNK){
+          const chunk = terminasi.slice(i, i + CHUNK);
+          const batch = db.batch();
+          chunk.forEach((row, idx) => {
+            const idBase = row.nomorKaryawan || (row.nama + '_' + (i+idx));
+            const docId = idBase.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const ref = db.collection('karyawan_terminasi').doc(docId);
+            batch.set(ref, { ...row, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: auth.currentUser.email });
+          });
+          await batch.commit();
+          bump();
+        }
+
+        // 3. Mutasi -> mutasi/{id} + mutasi/{id}/sensitive/data (Penyesuaian Gaji)
+        for(let i = 0; i < mutasi.length; i += CHUNK){
+          const chunk = mutasi.slice(i, i + CHUNK);
+          const batch = db.batch();
+          chunk.forEach(row => {
+            const idBase = (row.basic.nomorKaryawan || row.basic.nama) + '_' + row._rowIndex;
+            const docId = idBase.replace(/[^a-zA-Z0-9_-]/g, '_');
+            const basicRef = db.collection('mutasi').doc(docId);
+            const sensRef = basicRef.collection('sensitive').doc('data');
+            batch.set(basicRef, { ...row.basic, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: auth.currentUser.email });
+            batch.set(sensRef, { ...row.sensitive, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+          });
+          await batch.commit();
+          bump();
+        }
+
+        const totalSaved = aktif.length + terminasi.length + mutasi.length;
+        statusEl.textContent = `Berhasil menyimpan ${totalSaved} data (${aktif.length} aktif, ${terminasi.length} terminasi, ${mutasi.length} mutasi).`;
         statusEl.className = 'status-msg ok';
         btn.textContent = 'Simpan ke Database';
         btn.disabled = false;
