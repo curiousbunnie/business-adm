@@ -6,12 +6,13 @@
     <title>Dashboard Performance Branch Manager — Disburse</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PapaParse untuk membaca CSV Google Sheets -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root {
             --primary: #0f172a;
             --accent: #2563eb;
             --success: #10b981;
-            --warning: #f59e0b;
             --danger: #ef4444;
             --danger-bg: #fee2e2;
             --danger-text: #b91c1c;
@@ -27,10 +28,7 @@
             color: #1e293b;
         }
 
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1800px; margin: 0 auto; }
 
         .header-panel {
             display: flex;
@@ -48,12 +46,7 @@
         .header-panel h1 { margin: 0; font-size: 20px; font-weight: 700; color: var(--primary); }
         .header-panel p { margin: 4px 0 0 0; color: #64748b; font-size: 13px; }
         
-        .filter-group {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .filter-group { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
         .region-select, .search-input {
             padding: 10px 16px;
             font-size: 14px;
@@ -88,9 +81,8 @@
             gap: 24px;
             margin-bottom: 24px;
         }
-        @media (max-width: 992px) {
-            .dashboard-content { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 992px) { .dashboard-content { grid-template-columns: 1fr; } }
+
         .section-card {
             background: #ffffff;
             border-radius: 12px;
@@ -100,10 +92,7 @@
         }
         .section-card h3 { margin: 0 0 20px 0; font-size: 15px; font-weight: 700; color: var(--primary); }
 
-        .compliance-list {
-            max-height: 320px;
-            overflow-y: auto;
-        }
+        .compliance-list { max-height: 320px; overflow-y: auto; }
         .compliance-item {
             background: #f8fafc;
             padding: 12px 14px;
@@ -118,46 +107,27 @@
 
         .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
         .table-data { width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left; white-space: nowrap; }
-        
         .table-data th { padding: 10px 8px; border: 1px solid var(--border); text-align: center; font-weight: 600; }
         .table-data thead tr.main-header th { background: #f1f5f9; color: var(--primary); font-size: 11px; text-transform: uppercase; font-weight: 700; }
-        
         .table-data td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
         .num-cell { text-align: right !important; }
         .center-cell { text-align: center !important; }
         
-        .badge-sp {
-            background-color: var(--danger-bg);
-            color: var(--danger-text);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 11px;
-            display: inline-block;
-        }
-        .badge-normal {
-            background-color: #d1fae5;
-            color: #065f46;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 11px;
-        }
+        .badge-sp { background-color: var(--danger-bg); color: var(--danger-text); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 11px; }
+        .badge-normal { background-color: #d1fae5; color: #065f46; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 11px; }
 
         .table-data tr.row-total td { background: var(--bg-light); font-weight: 700; color: var(--primary); border-top: 2px solid #cbd5e1; }
         .table-data tr:hover td { background-color: #fafafa; }
-        
         .loading { padding: 60px 20px; text-align: center; font-weight: 600; color: var(--accent); font-size: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    
     <div class="header-panel">
         <div>
             <h1>Dashboard Monitoring Realisasi Disburse BM</h1>
-            <p>Menampilkan Top 10 Branch Manager berdasarkan Nominal Disburse (Actual) tertinggi.</p>
+            <p>Data terhubung langsung dari Google Spreadsheet secara real-time.</p>
         </div>
         <div class="filter-group">
             <input type="text" id="searchBar" class="search-input" placeholder="Cari Nama BM / Area...">
@@ -167,10 +137,10 @@
         </div>
     </div>
 
-    <div id="loadingText" class="loading">Memuat &amp; Menghubungkan ke Koleksi DisburseNational...</div>
+    <div id="loadingText" class="loading">Memuat & mendeteksi data dari Google Sheets...</div>
 
     <div id="dashboardContentWrapper" style="display: none;">
-        <!-- Ringkasan KPI -->
+        <!-- Card Ringkasan KPI -->
         <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="kpi-title">Total Target Disburse</div>
@@ -190,7 +160,7 @@
             </div>
         </div>
 
-        <!-- Section Visualisasi & Radar -->
+        <!-- Section Grafik & Warning List -->
         <div class="dashboard-content">
             <div class="section-card">
                 <h3>Visualisasi Top 10 Disburse / Actual BM</h3>
@@ -205,7 +175,7 @@
             </div>
         </div>
 
-        <!-- Tabel Rekapitulasi -->
+        <!-- Tabel Detail Data -->
         <div class="section-card">
             <h3>Rekapitulasi Disburse Branch Manager</h3>
             <div class="table-wrapper">
@@ -227,36 +197,21 @@
             </div>
         </div>
     </div>
-
 </div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
 <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
-      authDomain: "business-admin-center.firebaseapp.com",
-      projectId: "business-admin-center",
-      storageBucket: "business-admin-center.firebasestorage.app",
-      messagingSenderId: "165059982705",
-      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
-      measurementId: "G-TSW82QKX0P"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    // Link CSV publik milikmu
+    const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQSCzPxAjT6nS1TtSScDr3i_G45ZQ544c9cjMHQtReAsi6tdgdUvmwE7ZY65McPp2775B06ItlUoXdg/pub?gid=1097632755&single=true&output=csv";
 
-    let rawDataList = [];
     let processedBMData = [];
     let disburseChartInstance = null;
 
-    // Helper: Konversi Nilai Apapun Menjadi Angka Murni
+    // Helper: Mengubah teks angka acakadut/rupiah menjadi angka murni
     function cleanNumber(val) {
         if (val === undefined || val === null || val === "") return 0;
         if (typeof val === 'number') return val;
         
-        let str = val.toString().trim().replace(/Rp\s?/g, '');
+        let str = val.toString().trim().replace(/Rp\s?/gi, '');
         if (str.includes('.') && str.includes(',')) {
             str = str.replace(/\./g, '').replace(/,/g, '.');
         } else if (str.includes(',')) {
@@ -271,96 +226,77 @@
     }
 
     function formatRupiah(num) {
-        return "Rp " + parseFloat(num).toLocaleString('id-ID', {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        });
+        return "Rp " + parseFloat(num).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
 
-    // Helper: Mencari Nilai dari Berbagai Variasi Nama Field Firestore
-    function getFieldValue(doc, possibleKeys) {
-        for (let key of possibleKeys) {
-            for (let docKey in doc) {
-                if (docKey.trim().toLowerCase() === key.toLowerCase()) {
-                    return doc[docKey];
+    // Helper: Fleksibel mencari value berdasarkan variasi nama kolom Spreadsheet
+    function getValFromRow(row, possibleKeys) {
+        for (let pKey of possibleKeys) {
+            for (let actualKey in row) {
+                if (actualKey.trim().toLowerCase() === pKey.toLowerCase()) {
+                    return row[actualKey];
                 }
             }
         }
         return null;
     }
 
-    // Ambil Data Firestore
-    async function loadDisburseFromFirestore() {
+    function loadSpreadsheetData() {
         document.getElementById('loadingText').style.display = 'block';
         document.getElementById('dashboardContentWrapper').style.display = 'none';
 
-        try {
-            const snapshot = await db.collection('DisburseNational').get();
-            rawDataList = [];
-            
-            snapshot.forEach(doc => {
-                rawDataList.push(doc.data());
-            });
+        Papa.parse(GOOGLE_SHEETS_CSV_URL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                let rawData = results.data;
 
-            if(rawDataList.length === 0) {
-                document.getElementById('loadingText').innerHTML = "⚠️ Koleksi 'DisburseNational' kosong di Firestore.";
-                return;
+                processedBMData = rawData.map(row => {
+                    let nama = getValFromRow(row, ['NAMA BM', 'NAMA_BM', 'BM', 'NAMA', 'NAME']) || '-';
+                    if (!nama || nama === '-' || nama.toLowerCase().includes('total')) return null;
+
+                    let wilayah = getValFromRow(row, ['WILAYAH EXISTING', 'WILAYAH', 'AREA', 'REGIONAL', 'REG']) || 'Lainnya';
+
+                    let rawBudget = getValFromRow(row, ['JAN 2025 BUDGET', 'BUDGET', 'TARGET', 'JAN_2025_BUDGET']);
+                    let budget = cleanNumber(rawBudget);
+
+                    let rawActual = getValFromRow(row, ['JAN 2025 ACTUAL', 'ACTUAL', 'DISBURSE', 'REALISASI', 'JAN_2025_ACTUAL']);
+                    let actual = cleanNumber(rawActual);
+
+                    let rawAch = getValFromRow(row, ['% AMOUNT', 'ACH', 'PENCAPAIAN', '%', 'Unnamed: 14']);
+                    let pctAch = cleanNumber(rawAch);
+                    
+                    if (pctAch === 0 && budget > 0) {
+                        pctAch = (actual / budget) * 100;
+                    }
+
+                    return {
+                        nama: nama.toString().trim(),
+                        wilayah: wilayah.toString().trim(),
+                        budget: budget,
+                        actual: actual,
+                        pctAch: pctAch
+                    };
+                }).filter(item => item !== null);
+
+                populateRegionFilter();
+                renderDashboard();
+
+                document.getElementById('loadingText').style.display = 'none';
+                document.getElementById('dashboardContentWrapper').style.display = 'block';
+            },
+            error: function(err) {
+                document.getElementById('loadingText').innerHTML = "❌ Gagal mengambil data CSV. Pastikan Spreadsheet tetap terpublikasi.";
             }
-
-            processData();
-            document.getElementById('loadingText').style.display = 'none';
-            document.getElementById('dashboardContentWrapper').style.display = 'block';
-        } catch (err) {
-            console.error(err);
-            document.getElementById('loadingText').innerHTML = `Gagal memuat data Firestore: ${err.message}`;
-        }
+        });
     }
 
-    // Olah Data Firestore
-    function processData() {
-        processedBMData = rawDataList.map(doc => {
-            // Ambil Nama BM
-            let nama = getFieldValue(doc, ['NAMA BM', 'NAMA_BM', 'BM', 'NAME']) || '-';
-            if (nama === '-' || nama.toLowerCase().includes('total')) return null;
-
-            // Ambil Wilayah
-            let wilayah = getFieldValue(doc, ['WILAYAH EXISTING', 'WILAYAH', 'AREA', 'REGIONAL', 'REG']) || 'Lainnya';
-
-            // Ambil Budget (Target)
-            let rawBudget = getFieldValue(doc, ['JAN 2025 BUDGET', 'JAN_2025_BUDGET_AMOUNT', 'BUDGET', 'TARGET']);
-            let budget = cleanNumber(rawBudget);
-
-            // Ambil Actual (Disburse)
-            let rawActual = getFieldValue(doc, ['JAN 2025 ACTUAL', 'JAN_2025_ACTUAL_AMOUNT', 'ACTUAL', 'DISBURSE', 'REALISASI']);
-            let actual = cleanNumber(rawActual);
-
-            // Ambil atau Hitung % Ach
-            let rawAch = getFieldValue(doc, ['Unnamed: 14', '% AMOUNT', 'ACH', 'PENCAPAIAN', '%']);
-            let pctAch = cleanNumber(rawAch);
-            
-            if (pctAch === 0 && budget > 0) {
-                pctAch = (actual / budget) * 100;
-            }
-
-            return {
-                nama: nama,
-                wilayah: wilayah.toString().trim(),
-                budget: budget,
-                actual: actual, // ACTUAL = DISBURSE
-                pctAch: pctAch
-            };
-        }).filter(item => item !== null);
-
-        populateRegionFilter();
-        renderDashboard();
-    }
-
-    // Isi Dropdown Filter Wilayah
     function populateRegionFilter() {
         const regionSelect = document.getElementById('regionFilter');
         let currentSelection = regionSelect.value;
         let setWilayah = new Set();
-
+        
         processedBMData.forEach(i => { if(i.wilayah) setWilayah.add(i.wilayah); });
 
         let html = '<option value="ALL">Semua Wilayah</option>';
@@ -371,7 +307,6 @@
         if(Array.from(setWilayah).includes(currentSelection)) regionSelect.value = currentSelection;
     }
 
-    // Render Tabel, KPI, & Grafik
     function renderDashboard() {
         const searchTxt = document.getElementById('searchBar').value.toLowerCase().trim();
         const selectedRegion = document.getElementById('regionFilter').value;
@@ -382,11 +317,8 @@
             return matchName && matchRegion;
         });
 
-        let totalBudget = 0;
-        let totalActual = 0;
-        let countLow = 0;
-        let tableHtml = '';
-        let spListHtml = '';
+        let totalBudget = 0, totalActual = 0, countLow = 0;
+        let tableHtml = '', spListHtml = '';
 
         filtered.forEach((item, index) => {
             totalBudget += item.budget;
@@ -425,14 +357,12 @@
         document.getElementById('tableBody').innerHTML = tableHtml || `<tr><td colspan="7" style="text-align:center; padding:30px;">Data tidak ditemukan.</td></tr>`;
         document.getElementById('spListWrapper').innerHTML = spListHtml || '<div style="color:#64748b; font-size:13px; text-align:center; padding:25px;">✅ Seluruh BM telah mencapai target Disburse (≥ 90%).</div>';
 
-        // Update KPI
         let avgPct = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0;
         document.getElementById('kpiTargetTotal').innerText = formatRupiah(totalBudget);
         document.getElementById('kpiAcvTotal').innerText = formatRupiah(totalActual);
         document.getElementById('kpiPctTotal').innerText = avgPct.toFixed(2) + '%';
         document.getElementById('kpiCountSp').innerText = `${countLow} BM`;
 
-        // Update Footer Tabel
         document.getElementById('tableFoot').innerHTML = `
             <tr class="row-total">
                 <td colspan="3" class="center-cell">TOTAL KESELURUHAN</td>
@@ -443,26 +373,21 @@
             </tr>
         `;
 
-        // Render Grafik Top 10 Disburse
         const top10Data = [...filtered].sort((a, b) => b.actual - a.actual).slice(0, 10);
         renderDisburseChart(top10Data);
     }
 
-    // Grafik Chart.js
     function renderDisburseChart(topData) {
         const ctx = document.getElementById('disburseChart').getContext('2d');
         if (disburseChartInstance) { disburseChartInstance.destroy(); }
 
-        const labels = topData.map(i => `${i.nama} (${i.wilayah})`);
-        const values = topData.map(i => i.actual);
-
         disburseChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: labels,
+                labels: topData.map(i => `${i.nama} (${i.wilayah})`),
                 datasets: [{
                     label: 'Actual Disburse (Rp)',
-                    data: values,
+                    data: topData.map(i => i.actual),
                     backgroundColor: '#2563eb',
                     borderRadius: 6
                 }]
@@ -474,18 +399,14 @@
                     legend: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
-                                return 'Disburse: ' + formatRupiah(context.raw);
-                            }
+                            label: function(context) { return 'Disburse: ' + formatRupiah(context.raw); }
                         }
                     }
                 },
                 scales: {
                     y: {
                         ticks: {
-                            callback: function(value) {
-                                return 'Rp ' + (value / 1000000).toLocaleString('id-ID') + ' Jt';
-                            }
+                            callback: function(value) { return 'Rp ' + (value / 1000000).toLocaleString('id-ID') + ' Jt'; }
                         }
                     }
                 }
@@ -493,12 +414,12 @@
         });
     }
 
-    // Event Listeners Filter
+    // Event Listener Filter & Search
     document.getElementById('searchBar').addEventListener('input', renderDashboard);
     document.getElementById('regionFilter').addEventListener('change', renderDashboard);
 
-    // Jalankan Saat Halaman Dimuat
-    loadDisburseFromFirestore();
+    // Jalankan pertama kali
+    loadSpreadsheetData();
 </script>
 </body>
 </html>
