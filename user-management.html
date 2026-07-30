@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration Center — Manajemen User</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#14213d; --slate:#3b5a82; --gray-mute:#6b7785;
+    --bg:#f5f7fa; --card:#fff; --gold:#b08d57; --border:#e4e8ee;
+    --green:#1f8a5f; --red:#c9433a; --amber:#b07d1f;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'IBM Plex Sans', sans-serif; background:var(--bg); color:var(--navy); min-height:100vh; }
+  .topbar{
+    background:#fff; border-bottom:1px solid var(--border);
+    padding:16px 32px; display:flex; align-items:center; justify-content:space-between;
+  }
+  .topbar .eyebrow{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); font-weight:600; }
+  .topbar h1{ font-family:'Source Serif 4', serif; font-size:18px; font-weight:600; }
+  .back-link{ font-size:13px; color:var(--slate); text-decoration:none; font-weight:500; }
+  .wrap{ max-width:960px; margin:0 auto; padding:32px 24px; }
+  .section-title{ font-family:'Source Serif 4', serif; font-size:17px; font-weight:600; margin:28px 0 14px; }
+  .section-title:first-child{ margin-top:0; }
+  .empty{ color:var(--gray-mute); font-size:13.5px; padding:16px 0; }
+
+  .user-card{
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:20px 22px; margin-bottom:14px;
+  }
+  .user-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .user-id{ display:flex; align-items:center; gap:12px; }
+  .avatar{
+    width:38px; height:38px; border-radius:50%; background:var(--navy); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:600; flex-shrink:0;
+  }
+  .user-id .name{ font-size:14.5px; font-weight:600; }
+  .user-id .email{ font-size:12.5px; color:var(--gray-mute); }
+  .badge{
+    font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px;
+    text-transform:uppercase; letter-spacing:.03em;
+  }
+  .badge.pending{ background:#fbf3e2; color:var(--amber); }
+  .badge.approved{ background:#eaf6f0; color:var(--green); }
+
+  .role-row{ display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .role-row label{ font-size:12.5px; font-weight:600; color:var(--gray-mute); }
+  .role-row input[type=text]{
+    flex:1; min-width:180px; padding:8px 10px; border:1px solid var(--border); border-radius:5px;
+    font-family:'IBM Plex Sans',sans-serif; font-size:13.5px;
+  }
+
+  .perm-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:8px 16px;
+    margin-bottom:16px;
+  }
+  .perm-item{
+    display:flex; align-items:center; gap:8px; font-size:13px; color:var(--navy);
+  }
+  .perm-item input{ width:15px; height:15px; accent-color:var(--navy); }
+
+  .action-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .btn{
+    padding:9px 16px; border-radius:6px; border:1px solid var(--border); background:#fff;
+    font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .btn-primary{ background:var(--navy); color:#fff; border-color:var(--navy); }
+  .btn-primary:hover{ background:#0d1830; }
+  .btn-danger{ color:var(--red); border-color:#f0d3ce; }
+  .btn-danger:hover{ background:#fdf1ee; }
+  .save-note{ font-size:12px; color:var(--green); display:none; margin-left:4px; align-self:center; }
+
+  .denied{ text-align:center; padding:80px 20px; }
+  .denied h2{ font-family:'Source Serif 4', serif; font-size:22px; margin-bottom:10px; }
+  .denied p{ color:var(--gray-mute); font-size:14px; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Administration Center</div>
+      <h1>Manajemen User</h1>
+    </div>
+    <a class="back-link" href="dashboard.html">← Kembali ke Dashboard</a>
+  </div>
+
+  <div id="loadingCheck" class="wrap"><p style="color:var(--gray-mute); font-size:14px;">Memeriksa akses...</p></div>
+  <div id="denied" class="denied" style="display:none;">
+    <h2>Akses Ditolak</h2>
+    <p>Halaman ini hanya untuk administrator.</p>
+  </div>
+
+  <div id="gate" class="wrap" style="display:none;">
+    <div class="section-title">Menunggu Persetujuan</div>
+    <div id="pendingList"></div>
+    <div class="empty" id="pendingEmpty" style="display:none;">Tidak ada permintaan akses baru.</div>
+
+    <div class="section-title">User Aktif</div>
+    <div id="approvedList"></div>
+    <div class="empty" id="approvedEmpty" style="display:none;">Belum ada user yang di-approve.</div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
+      authDomain: "business-admin-center.firebaseapp.com",
+      projectId: "business-admin-center",
+      storageBucket: "business-admin-center.firebasestorage.app",
+      messagingSenderId: "165059982705",
+      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
+      measurementId: "G-TSW82QKX0P"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const PERMS = [
+      { key: 'sdm', label: 'SDM' },
+      { key: 'disburseNational', label: 'Disburse National' },
+      { key: 'achievement', label: 'Achievement' },
+      { key: 'ourTeam', label: 'Our Team' },
+      { key: 'uploadData', label: 'Upload Data Disburse' }
+    ];
+
+    let currentUid = null;
+
+    auth.onAuthStateChanged(async function(user){
+      const loadingEl = document.getElementById('loadingCheck');
+      if(!user){
+        window.location.href = 'login.html';
+        return;
+      }
+      currentUid = user.uid;
+      try{
+        const doc = await db.collection('users').doc(user.uid).get();
+        const role = doc.exists ? doc.data().role : null;
+        const isAdmin = doc.exists && doc.data().status === 'approved' &&
+          (doc.data().role === 'administrator' || doc.data().role === 'admin' ||
+           (doc.data().permissions === undefined && role === 'administrator'));
+        loadingEl.style.display = 'none';
+
+        // Cek admin: kita anggap admin kalau field role persis 'administrator'/'admin'
+        const roleVal = doc.exists ? doc.data().role : '';
+        if(roleVal === 'administrator' || roleVal === 'admin'){
+          document.getElementById('gate').style.display = 'block';
+          loadUsers();
+        } else {
+          document.getElementById('denied').style.display = 'block';
+        }
+      }catch(e){
+        loadingEl.style.display = 'none';
+        document.getElementById('denied').style.display = 'block';
+      }
+    });
+
+    async function loadUsers(){
+      const snap = await db.collection('users').get();
+      const pendingWrap = document.getElementById('pendingList');
+      const approvedWrap = document.getElementById('approvedList');
+      pendingWrap.innerHTML = '';
+      approvedWrap.innerHTML = '';
+      let pendingCount = 0, approvedCount = 0;
+
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        const uid = docSnap.id;
+        const card = buildUserCard(uid, data);
+        if(data.status === 'pending'){
+          pendingWrap.appendChild(card);
+          pendingCount++;
+        } else {
+          approvedWrap.appendChild(card);
+          approvedCount++;
+        }
+      });
+
+      document.getElementById('pendingEmpty').style.display = pendingCount ? 'none' : 'block';
+      document.getElementById('approvedEmpty').style.display = approvedCount ? 'none' : 'block';
+    }
+
+    function buildUserCard(uid, data){
+      const card = document.createElement('div');
+      card.className = 'user-card';
+
+      const initial = (data.name || data.email || '?').charAt(0).toUpperCase();
+      const isPending = data.status === 'pending';
+      const perms = data.permissions || {};
+
+      const permHtml = PERMS.map(p => `
+        <label class="perm-item">
+          <input type="checkbox" data-perm="${p.key}" ${perms[p.key] ? 'checked' : ''}>
+          ${p.label}
+        </label>
+      `).join('');
+
+      card.innerHTML = `
+        <div class="user-head">
+          <div class="user-id">
+            <div class="avatar">${initial}</div>
+            <div>
+              <div class="name">${data.name || '(tanpa nama)'}</div>
+              <div class="email">${data.email || ''}</div>
+            </div>
+          </div>
+          <span class="badge ${isPending ? 'pending' : 'approved'}">${isPending ? 'Menunggu' : 'Aktif'}</span>
+        </div>
+
+        <div class="role-row">
+          <label>Label Jabatan</label>
+          <input type="text" class="role-input" placeholder="misal: Admin Regional 1" value="${data.role && data.role !== 'Menunggu ditinjau' ? data.role : ''}">
+        </div>
+
+        <div class="perm-grid">${permHtml}</div>
+
+        <div class="action-row">
+          ${isPending ? '<button class="btn btn-primary" data-action="approve">Approve &amp; Simpan Akses</button>' : '<button class="btn btn-primary" data-action="save">Simpan Perubahan</button>'}
+          <button class="btn btn-danger" data-action="revoke">${isPending ? 'Tolak' : 'Cabut Akses'}</button>
+          <span class="save-note" data-note>Tersimpan ✓</span>
+        </div>
+      `;
+
+      card.querySelector('[data-action="approve"], [data-action="save"]')?.addEventListener('click', async function(){
+        const btn = this;
+        const roleVal = card.querySelector('.role-input').value.trim() || (isPending ? 'Staff' : data.role);
+        const newPerms = {};
+        PERMS.forEach(p => {
+          newPerms[p.key] = card.querySelector(`[data-perm="${p.key}"]`).checked;
+        });
+        btn.disabled = true;
+        try{
+          await db.collection('users').doc(uid).update({
+            status: 'approved',
+            role: roleVal,
+            permissions: newPerms
+          });
+          card.querySelector('[data-note]').style.display = 'inline';
+          setTimeout(() => loadUsers(), 700);
+        }catch(e){
+          alert('Gagal menyimpan: ' + e.message);
+          btn.disabled = false;
+        }
+      });
+
+      card.querySelector('[data-action="revoke"]').addEventListener('click', async function(){
+        const confirmMsg = isPending ? 'Tolak permintaan akses ini?' : 'Cabut semua akses user ini? Statusnya akan kembali menunggu persetujuan.';
+        if(!confirm(confirmMsg)) return;
+        try{
+          if(isPending){
+            await db.collection('users').doc(uid).delete();
+          } else {
+            await db.collection('users').doc(uid).update({
+              status: 'pending',
+              permissions: { sdm:false, disburseNational:false, achievement:false, ourTeam:false, uploadData:false }
+            });
+          }
+          loadUsers();
+        }catch(e){
+          alert('Gagal memproses: ' + e.message);
+        }
+      });
+
+      return card;
+    }
+  </script>
+</body>
+</html>

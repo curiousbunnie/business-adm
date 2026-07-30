@@ -277,8 +277,13 @@
       <p class="sub">Masukkan kredensial Anda untuk mengakses dashboard.</p>
 
       <div class="error-msg" id="errorMsg">Email atau kata sandi tidak sesuai. Coba lagi.</div>
+      <div class="error-msg" id="successMsg" style="background:#eaf6f0; border-color:#a9d9c1; color:#1f8a5f;"></div>
 
       <form id="loginForm" novalidate>
+        <div class="field" id="nameField" style="display:none;">
+          <label for="fullName">Nama Lengkap</label>
+          <input type="text" id="fullName" name="fullName" placeholder="Nama kamu">
+        </div>
         <div class="field">
           <label for="email">Email</label>
           <input type="email" id="email" name="email" placeholder="nama@perusahaan.com" required>
@@ -288,7 +293,7 @@
           <input type="password" id="password" name="password" placeholder="••••••••" required>
         </div>
 
-        <div class="row-between">
+        <div class="row-between" id="rememberRow">
           <label class="remember">
             <input type="checkbox" id="remember" name="remember">
             Ingat saya
@@ -296,17 +301,18 @@
           <a href="#">Lupa kata sandi?</a>
         </div>
 
-        <button type="submit" class="submit">Masuk</button>
+        <button type="submit" class="submit" id="submitBtn">Masuk</button>
       </form>
 
       <div class="divider-line">akses terbatas</div>
-      <p class="foot-note">Butuh akses? Hubungi <a href="#">administrator sistem</a>.</p>
+      <p class="foot-note" id="toggleModeNote">Belum punya akun? <a href="#" id="toggleMode">Daftar akun baru</a></p>
     </div>
   </div>
 
   <!-- Firebase (compat SDK, cocok dipakai langsung lewat <script> tanpa npm/bundler) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
   <script>
     // Konfigurasi project Firebase kamu
@@ -321,17 +327,58 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let mode = 'signin'; // 'signin' | 'signup'
 
     const form = document.getElementById('loginForm');
     const errorBox = document.getElementById('errorMsg');
-    const submitBtn = form.querySelector('button.submit');
+    const successBox = document.getElementById('successMsg');
+    const submitBtn = document.getElementById('submitBtn');
+    const nameField = document.getElementById('nameField');
+    const rememberRow = document.getElementById('rememberRow');
+    const toggleMode = document.getElementById('toggleMode');
+    const toggleModeNote = document.getElementById('toggleModeNote');
 
     function showError(msg){
+      successBox.style.display = 'none';
       errorBox.textContent = msg;
       errorBox.style.display = 'block';
     }
+    function showSuccess(msg){
+      errorBox.style.display = 'none';
+      successBox.textContent = msg;
+      successBox.style.display = 'block';
+    }
 
-    // Terjemahin kode error Firebase ke bahasa yang lebih manusiawi
+    const toggleModeText = document.getElementById('toggleModeNote');
+
+    function setMode(newMode){
+      mode = newMode;
+      errorBox.style.display = 'none';
+      successBox.style.display = 'none';
+      if(mode === 'signup'){
+        nameField.style.display = 'block';
+        rememberRow.style.display = 'none';
+        submitBtn.textContent = 'Daftar Akun';
+        toggleModeText.innerHTML = 'Sudah punya akun? <a href="#" data-toggle-link>Masuk</a>';
+      } else {
+        nameField.style.display = 'none';
+        rememberRow.style.display = 'flex';
+        submitBtn.textContent = 'Masuk';
+        toggleModeText.innerHTML = 'Belum punya akun? <a href="#" data-toggle-link>Daftar akun baru</a>';
+      }
+    }
+
+    // Event delegation: link di dalam toggleModeText selalu punya data-toggle-link,
+    // jadi nggak perlu rebind listener tiap kali innerHTML diganti.
+    toggleModeText.addEventListener('click', function(e){
+      if(e.target.matches('[data-toggle-link]')){
+        e.preventDefault();
+        setMode(mode === 'signin' ? 'signup' : 'signin');
+      }
+    });
+
     function translateError(code){
       switch(code){
         case 'auth/invalid-email': return 'Format email tidak valid.';
@@ -339,36 +386,74 @@
         case 'auth/wrong-password':
         case 'auth/invalid-credential': return 'Email atau kata sandi tidak sesuai.';
         case 'auth/too-many-requests': return 'Terlalu banyak percobaan. Coba lagi beberapa saat.';
-        default: return 'Gagal masuk. Coba lagi.';
+        case 'auth/email-already-in-use': return 'Email ini sudah terdaftar. Coba masuk saja.';
+        case 'auth/weak-password': return 'Kata sandi minimal 6 karakter.';
+        default: return 'Terjadi kesalahan. Coba lagi.';
       }
     }
 
-    form.addEventListener('submit', function(e){
+    async function handleSignIn(email, password){
+      const cred = await auth.signInWithEmailAndPassword(email, password);
+      const userDoc = await db.collection('users').doc(cred.user.uid).get();
+      const data = userDoc.exists ? userDoc.data() : null;
+
+      if(!data || data.status === 'pending'){
+        window.location.href = 'pending.html';
+        return;
+      }
+      window.location.href = 'dashboard.html';
+    }
+
+    async function handleSignUp(name, email, password){
+      const cred = await auth.createUserWithEmailAndPassword(email, password);
+      await db.collection('users').doc(cred.user.uid).set({
+        name: name || '',
+        email: email,
+        status: 'pending',
+        role: 'Menunggu ditinjau',
+        permissions: {
+          sdm: false,
+          disburseNational: false,
+          achievement: false,
+          ourTeam: false,
+          uploadData: false
+        },
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      window.location.href = 'pending.html';
+    }
+
+    form.addEventListener('submit', async function(e){
       e.preventDefault();
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
+      const name = document.getElementById('fullName').value.trim();
 
       if(!email || !password){
         showError('Email dan kata sandi wajib diisi.');
         return;
       }
+      if(mode === 'signup' && !name){
+        showError('Nama lengkap wajib diisi.');
+        return;
+      }
 
       errorBox.style.display = 'none';
+      successBox.style.display = 'none';
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Memproses...';
+      submitBtn.textContent = mode === 'signup' ? 'Mendaftarkan...' : 'Memproses...';
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(function(userCredential){
-          // Login berhasil — arahkan ke halaman dashboard
-          window.location.href = 'dashboard.html';
-        })
-        .catch(function(error){
-          showError(translateError(error.code));
-        })
-        .finally(function(){
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Masuk';
-        });
+      try{
+        if(mode === 'signup'){
+          await handleSignUp(name, email, password);
+        } else {
+          await handleSignIn(email, password);
+        }
+      }catch(error){
+        showError(translateError(error.code));
+        submitBtn.disabled = false;
+        submitBtn.textContent = mode === 'signup' ? 'Daftar Akun' : 'Masuk';
+      }
     });
   </script>
 

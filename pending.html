@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration Center — Menunggu Persetujuan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{ --navy:#14213d; --slate:#3b5a82; --gray-mute:#6b7785; --bg:#f5f7fa; --card:#fff; --gold:#b08d57; --border:#e4e8ee; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family:'IBM Plex Sans', sans-serif; background:var(--bg); color:var(--navy);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:10px;
+    padding:44px 36px; max-width:440px; text-align:center;
+  }
+  .icon{
+    width:56px; height:56px; border-radius:50%; background:#fbf3e8; color:var(--gold);
+    display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:24px;
+  }
+  h1{ font-family:'Source Serif 4', serif; font-size:22px; font-weight:600; margin-bottom:10px; }
+  p{ color:var(--gray-mute); font-size:14px; line-height:1.7; margin-bottom:24px; }
+  .email-chip{ font-weight:600; color:var(--navy); }
+  .btn{
+    padding:11px 22px; border-radius:6px; border:1px solid var(--border); background:#fff;
+    color:var(--navy); font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; font-weight:600; cursor:pointer;
+  }
+  .btn:hover{ background:var(--bg); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">⏳</div>
+    <h1>Menunggu Persetujuan</h1>
+    <p>Akun <span class="email-chip" id="userEmail">kamu</span> sudah terdaftar, tapi masih menunggu persetujuan administrator sebelum bisa mengakses dashboard. Kamu akan bisa masuk begitu akses disetujui.</p>
+    <button class="btn" id="logoutBtn">Keluar</button>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
+      authDomain: "business-admin-center.firebaseapp.com",
+      projectId: "business-admin-center",
+      storageBucket: "business-admin-center.firebasestorage.app",
+      messagingSenderId: "165059982705",
+      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
+      measurementId: "G-TSW82QKX0P"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(async function(user){
+      if(!user){
+        window.location.href = 'login.html';
+        return;
+      }
+      document.getElementById('userEmail').textContent = user.email;
+
+      // Kalau ternyata udah di-approve, langsung lempar ke dashboard
+      try{
+        const doc = await db.collection('users').doc(user.uid).get();
+        if(doc.exists && doc.data().status === 'approved'){
+          window.location.href = 'dashboard.html';
+        }
+      }catch(e){ /* diem aja, tetap di halaman ini */ }
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', function(){
+      auth.signOut().then(() => window.location.href = 'login.html');
+    });
+  </script>
+</body>
+</html>
