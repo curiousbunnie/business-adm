@@ -104,8 +104,9 @@
     color:var(--gray-mute);
     text-decoration:none;
     border-radius:6px;
+    cursor:pointer;
   }
-  .submenu li a:hover{ background:var(--bg); color:var(--navy); }
+  .submenu li a:hover, .submenu li a.active{ background:var(--bg); color:var(--navy); font-weight:600; }
 
   .sidebar-foot{
     padding:14px 24px 0;
@@ -219,7 +220,7 @@
   }
   .stat-card .value{
     font-family:'Source Serif 4', serif;
-    font-size:28px;
+    font-size:24px;
     font-weight:600;
     color:var(--navy);
   }
@@ -228,44 +229,63 @@
     color:var(--slate);
     margin-top:6px;
   }
-  .panels{
-    display:grid;
-    grid-template-columns:1.4fr 1fr;
-    gap:20px;
+
+  /* ---------- Data Table ---------- */
+  .table-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px;
+    margin-top: 20px;
   }
-  .panel{
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:22px;
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
   }
-  .panel h4{
-    font-family:'Source Serif 4', serif;
-    font-size:16px;
-    font-weight:600;
-    margin-bottom:16px;
+  .search-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    width: 250px;
+    outline: none;
   }
-  .link-list{ list-style:none; }
-  .link-list li{
-    display:flex;
-    justify-content:space-between;
-    padding:11px 0;
-    border-bottom:1px solid var(--border);
-    font-size:13.5px;
+  .search-input:focus {
+    border-color: var(--slate);
   }
-  .link-list li:last-child{ border-bottom:none; }
-  .link-list .tag{
-    font-size:11px;
-    color:var(--gray-mute);
+  .table-container {
+    overflow-x: auto;
   }
-  .empty-note{
-    font-size:13px;
-    color:var(--gray-mute);
-    line-height:1.7;
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
   }
-  @media (max-width: 900px){
-    .panels{ grid-template-columns:1fr; }
+  th {
+    background: #f8fafc;
+    color: var(--navy);
+    font-weight: 600;
+    padding: 12px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
   }
+  td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    color: #334155;
+    white-space: nowrap;
+  }
+  tr:hover td {
+    background: #f8fafc;
+  }
+  .page-view { display: none; }
+  .page-view.active { display: block; }
+
   @media (max-width: 760px){
     body{ flex-direction:column; }
     .sidebar{ width:100%; height:auto; position:relative; }
@@ -282,18 +302,18 @@
 
     <nav class="menu">
       <div class="menu-group">
-        <a class="menu-link active" href="#">Home</a>
+        <a class="menu-link active" href="#" onclick="showHomeView()">Home</a>
       </div>
 
       <!-- Menu Disburse -->
-      <div class="menu-group">
+      <div class="menu-group open">
         <div class="menu-link" data-toggle>
           <span>Disburse</span><span class="chevron">›</span>
         </div>
         <ul class="submenu">
-          <li><a href="#">Regional 1</a></li>
-          <li><a href="#">Regional 2</a></li>
-          <li><a href="#">Java</a></li>
+          <li><a onclick="loadDisburseData('REGIONAL 1')">Regional 1</a></li>
+          <li><a onclick="loadDisburseData('REGIONAL 2')">Regional 2</a></li>
+          <li><a onclick="loadDisburseData('JAVA')">Java</a></li>
         </ul>
       </div>
 
@@ -309,46 +329,10 @@
         </ul>
       </div>
 
-      <!-- Menu DPK 0 - 2 -->
+      <!-- Menu DPK -->
       <div class="menu-group">
         <div class="menu-link" data-toggle>
           <span>DPK 0 - 2</span><span class="chevron">›</span>
-        </div>
-        <ul class="submenu">
-          <li><a href="#">Regional 1</a></li>
-          <li><a href="#">Regional 2</a></li>
-          <li><a href="#">Java</a></li>
-        </ul>
-      </div>
-
-      <!-- Menu DPK 3 - 6 -->
-      <div class="menu-group">
-        <div class="menu-link" data-toggle>
-          <span>DPK 3 - 6</span><span class="chevron">›</span>
-        </div>
-        <ul class="submenu">
-          <li><a href="#">Regional 1</a></li>
-          <li><a href="#">Regional 2</a></li>
-          <li><a href="#">Java</a></li>
-        </ul>
-      </div>
-
-      <!-- Menu DPK 0 - 10 -->
-      <div class="menu-group">
-        <div class="menu-link" data-toggle>
-          <span>DPK 0 - 10</span><span class="chevron">›</span>
-        </div>
-        <ul class="submenu">
-          <li><a href="#">Regional 1</a></li>
-          <li><a href="#">Regional 2</a></li>
-          <li><a href="#">Java</a></li>
-        </ul>
-      </div>
-
-      <!-- Menu DPK 7 - 10 -->
-      <div class="menu-group">
-        <div class="menu-link" data-toggle>
-          <span>DPK 7 - 10</span><span class="chevron">›</span>
         </div>
         <ul class="submenu">
           <li><a href="#">Regional 1</a></li>
@@ -365,12 +349,7 @@
         <ul class="submenu">
           <li><a href="#">Data Karyawan</a></li>
           <li><a href="#">Terminated</a></li>
-          <li><a href="#">Rotasi / Promosi / Demosi / Mutasi</a></li>
         </ul>
-      </div>
-
-      <div class="menu-group">
-        <a class="menu-link" href="#">Our Team</a>
       </div>
     </nav>
 
@@ -388,59 +367,98 @@
 
   <div class="main">
     <div class="topbar">
-      <h2>Dashboard</h2>
+      <h2 id="topbarTitle">Dashboard</h2>
       <div class="date" id="todayDate"></div>
     </div>
 
     <div class="content">
-      <div class="greet">
-        <div class="kicker">Ringkasan</div>
-        <h3>Selamat datang kembali</h3>
+      
+      <!-- Halaman Home / Default -->
+      <div id="homeView" class="page-view active">
+        <div class="greet">
+          <div class="kicker">Ringkasan</div>
+          <h3>Selamat datang kembali</h3>
+        </div>
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="label">Total Karyawan</div>
+            <div class="value">—</div>
+            <div class="delta">Data belum disambungkan</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Disburse Bulan Ini</div>
+            <div class="value">—</div>
+            <div class="delta">Pilih menu Disburse</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Regional Aktif</div>
+            <div class="value">3</div>
+            <div class="delta">Regional 1, Regional 2 &amp; Java</div>
+          </div>
+        </div>
       </div>
 
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="label">Total Karyawan</div>
-          <div class="value">—</div>
-          <div class="delta">Data belum disambungkan</div>
+      <!-- Halaman Disburse Data -->
+      <div id="disburseView" class="page-view">
+        <div class="greet">
+          <div class="kicker" id="disburseRegionSub">DISBURSE NATIONAL</div>
+          <h3 id="disburseRegionTitle">Data Disburse Regional</h3>
         </div>
-        <div class="stat-card">
-          <div class="label">Disburse Bulan Ini</div>
-          <div class="value">—</div>
-          <div class="delta">Data belum disambungkan</div>
+
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="label">Total Branch Manager</div>
+            <div class="value" id="statBmCount">0</div>
+            <div class="delta">BM Terdata</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Total Disburse Jan 2025</div>
+            <div class="value" id="statTotalDisburse">Rp 0</div>
+            <div class="delta">Realisasi Disburse</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Rata-Rata Per BM</div>
+            <div class="value" id="statAvgDisburse">Rp 0</div>
+            <div class="delta">Realisasi Jan 2025</div>
+          </div>
         </div>
-        <div class="stat-card">
-          <div class="label">Forecast</div>
-          <div class="value">—</div>
-          <div class="delta">Data belum disambungkan</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Regional Aktif</div>
-          <div class="value">3</div>
-          <div class="delta">Regional 1, Regional 2 &amp; Java</div>
+
+        <div class="table-panel">
+          <div class="table-header">
+            <h4>Detail Laporan Disburse</h4>
+            <input type="text" id="searchInput" class="search-input" placeholder="Cari Nama BM / Area..." onkeyup="filterTable()">
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Area</th>
+                  <th>Wilayah</th>
+                  <th>Nokar</th>
+                  <th>Nama BM</th>
+                  <th>Budget Jan 2025</th>
+                  <th>Actual Jan 2025</th>
+                  <th>% Ach</th>
+                </tr>
+              </thead>
+              <tbody id="disburseTableBody">
+                <tr><td colspan="8" style="text-align:center;">Memuat data...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      <div class="panels">
-        <div class="panel">
-          <h4>Aktivitas Terbaru</h4>
-          <p class="empty-note">Belum ada aktivitas tercatat. Bagian ini akan menampilkan riwayat perubahan data, pengajuan, dan aktivitas tim setelah data mulai disambungkan.</p>
-        </div>
-        <div class="panel">
-          <h4>Akses Cepat</h4>
-          <ul class="link-list">
-            <li>Data Karyawan <span class="tag">SDM</span></li>
-            <li>Forecast <span class="tag">Laporan</span></li>
-            <li>Our Team <span class="tag">Umum</span></li>
-          </ul>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- Firebase Auth -->
+  <!-- Firebase Auth & Firestore -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
@@ -453,8 +471,11 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    // Proteksi halaman: kalau belum login, lempar balik ke login.html
+    let allDisburseData = [];
+
+    // Proteksi Login
     auth.onAuthStateChanged(function(user){
       if(!user){
         window.location.href = 'login.html';
@@ -470,17 +491,125 @@
       });
     });
 
-    // Sidebar accordion
+    // Toggle Submenu
     document.querySelectorAll('.menu-link[data-toggle]').forEach(function(el){
       el.addEventListener('click', function(){
         el.closest('.menu-group').classList.toggle('open');
       });
     });
 
-    // Tanggal hari ini
+    // Tanggal Hari Ini
     document.getElementById('todayDate').textContent = new Date().toLocaleDateString('id-ID', {
       weekday:'long', year:'numeric', month:'long', day:'numeric'
     });
+
+    // Navigation Switcher
+    function showHomeView() {
+      document.getElementById('homeView').classList.add('active');
+      document.getElementById('disburseView').classList.remove('active');
+      document.getElementById('topbarTitle').textContent = "Dashboard";
+    }
+
+    // Format Rupiah
+    function formatRupiah(val) {
+      if(!val) return "Rp 0";
+      let num = parseFloat(String(val).replace(/[^0-9.-]+/g, ""));
+      if(isNaN(num)) return "Rp 0";
+      return "Rp " + num.toLocaleString('id-ID');
+    }
+
+    // Load Data Disburse dari Firestore
+    async function loadDisburseData(regionName) {
+      document.getElementById('homeView').classList.remove('active');
+      document.getElementById('disburseView').classList.add('active');
+      document.getElementById('topbarTitle').textContent = `Disburse — ${regionName}`;
+      document.getElementById('disburseRegionTitle').textContent = `Disburse ${regionName}`;
+      
+      const tbody = document.getElementById('disburseTableBody');
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Mengambil data dari Firestore...</td></tr>';
+
+      try {
+        const snapshot = await db.collection('DisburseNational').get();
+        allDisburseData = [];
+        
+        snapshot.forEach(doc => {
+          let data = doc.data();
+          allDisburseData.push(data);
+        });
+
+        // Filter berdasarkan Region jika ada
+        let filteredData = allDisburseData.filter(item => {
+          let reg = (item.REG || item.REGIONAL || "").toString().toUpperCase();
+          return reg.includes(regionName.toUpperCase());
+        });
+
+        if(filteredData.length === 0) {
+          filteredData = allDisburseData; // Tampilkan semua jika tidak ada pencocokan persis
+        }
+
+        renderTable(filteredData);
+      } catch (error) {
+        console.error(error);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Gagal memuat data: ${error.message}</td></tr>`;
+      }
+    }
+
+    // Render Tabel & Statistik
+    function renderTable(dataList) {
+      const tbody = document.getElementById('disburseTableBody');
+      tbody.innerHTML = '';
+
+      let totalDisburse = 0;
+      let countBM = dataList.length;
+
+      if(dataList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Tidak ada data ditemukan.</td></tr>';
+        return;
+      }
+
+      dataList.forEach((row, index) => {
+        // Ambil nilai kolom (fleksibel sesuai header CSV)
+        let area = row['AREA'] || '-';
+        let wilayah = row['WILAYAH EXISTING'] || row['WILAYAH'] || '-';
+        let nokar = row['NOKAR'] || '-';
+        let namaBm = row['NAMA BM'] || row['NAMA_BM'] || '-';
+        let budget = row[' JAN 2025 BUDGET'] || row['JAN_2025_BUDGET_AMOUNT'] || 0;
+        let actual = row[' JAN 2025 ACTUAL'] || row['JAN_2025_ACTUAL_AMOUNT'] || 0;
+        let ach = row['Unnamed: 14'] || row['% AMOUNT'] || '-';
+
+        let actualNum = parseFloat(String(actual).replace(/[^0-9.-]+/g, "")) || 0;
+        totalDisburse += actualNum;
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${area}</td>
+          <td>${wilayah}</td>
+          <td>${nokar}</td>
+          <td><strong>${namaBm}</strong></td>
+          <td>${formatRupiah(budget)}</td>
+          <td>${formatRupiah(actual)}</td>
+          <td><span style="font-weight:600; color:var(--slate);">${ach}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Update Card Statistik
+      document.getElementById('statBmCount').textContent = countBM;
+      document.getElementById('statTotalDisburse').textContent = formatRupiah(totalDisburse);
+      document.getElementById('statAvgDisburse').textContent = formatRupiah(countBM > 0 ? totalDisburse / countBM : 0);
+    }
+
+    // Filter Pencarian
+    function filterTable() {
+      let query = document.getElementById('searchInput').value.toLowerCase();
+      let rows = document.querySelectorAll('#disburseTableBody tr');
+      
+      rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+      });
+    }
   </script>
 
 </body>
