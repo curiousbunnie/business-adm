@@ -304,22 +304,71 @@
     </div>
   </div>
 
+  <!-- Firebase (compat SDK, cocok dipakai langsung lewat <script> tanpa npm/bundler) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
   <script>
-    // Placeholder submit handler — ganti dengan logic auth (mis. Firebase Auth) nanti.
-    document.getElementById('loginForm').addEventListener('submit', function(e){
+    // Konfigurasi project Firebase kamu
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
+      authDomain: "business-admin-center.firebaseapp.com",
+      projectId: "business-admin-center",
+      storageBucket: "business-admin-center.firebasestorage.app",
+      messagingSenderId: "165059982705",
+      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
+      measurementId: "G-TSW82QKX0P"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const form = document.getElementById('loginForm');
+    const errorBox = document.getElementById('errorMsg');
+    const submitBtn = form.querySelector('button.submit');
+
+    function showError(msg){
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+    }
+
+    // Terjemahin kode error Firebase ke bahasa yang lebih manusiawi
+    function translateError(code){
+      switch(code){
+        case 'auth/invalid-email': return 'Format email tidak valid.';
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential': return 'Email atau kata sandi tidak sesuai.';
+        case 'auth/too-many-requests': return 'Terlalu banyak percobaan. Coba lagi beberapa saat.';
+        default: return 'Gagal masuk. Coba lagi.';
+      }
+    }
+
+    form.addEventListener('submit', function(e){
       e.preventDefault();
-      // contoh: tampilkan error kalau field kosong
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value.trim();
-      const errorBox = document.getElementById('errorMsg');
+
       if(!email || !password){
-        errorBox.style.display = 'block';
-        errorBox.textContent = 'Email dan kata sandi wajib diisi.';
+        showError('Email dan kata sandi wajib diisi.');
         return;
       }
+
       errorBox.style.display = 'none';
-      // TODO: sambungkan ke sistem autentikasi
-      alert('Form siap — tinggal disambungkan ke sistem login (Firebase Auth, dsb).');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Memproses...';
+
+      auth.signInWithEmailAndPassword(email, password)
+        .then(function(userCredential){
+          // Login berhasil — arahkan ke halaman dashboard
+          window.location.href = 'dashboard.html';
+        })
+        .catch(function(error){
+          showError(translateError(error.code));
+        })
+        .finally(function(){
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Masuk';
+        });
     });
   </script>
 
