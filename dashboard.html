@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration Center — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #14213d;
+    --slate: #3b5a82;
+    --gray-mute: #6b7785;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --gold: #b08d57;
+    --border: #e4e8ee;
+    --sidebar-w: 264px;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family:'IBM Plex Sans', sans-serif;
+    background:var(--bg);
+    color:var(--navy);
+    min-height:100vh;
+    display:flex;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:var(--sidebar-w);
+    background:#fff;
+    border-right:1px solid var(--border);
+    height:100vh;
+    position:sticky;
+    top:0;
+    display:flex;
+    flex-direction:column;
+    padding:28px 0;
+  }
+  .sidebar .brand{
+    padding:0 24px 22px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:14px;
+  }
+  .sidebar .brand .eyebrow{
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .sidebar .brand h1{
+    font-family:'Source Serif 4', serif;
+    font-size:19px;
+    font-weight:600;
+    color:var(--navy);
+    line-height:1.25;
+  }
+  nav.menu{
+    flex:1;
+    overflow-y:auto;
+    padding:8px 14px;
+  }
+  .menu-group{ margin-bottom:2px; }
+  .menu-link{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:10px 12px;
+    border-radius:6px;
+    color:var(--navy);
+    text-decoration:none;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    user-select:none;
+  }
+  .menu-link:hover{ background:var(--bg); }
+  .menu-link.active{ background:#eef2f7; color:var(--slate); }
+  .menu-link .chevron{
+    font-size:11px;
+    color:var(--gray-mute);
+    transition:transform .15s ease;
+  }
+  .menu-group.open .chevron{ transform:rotate(90deg); }
+  .submenu{
+    list-style:none;
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .2s ease;
+    padding-left:14px;
+    border-left:1px solid var(--border);
+    margin-left:22px;
+  }
+  .menu-group.open .submenu{ max-height:400px; }
+  .submenu li a{
+    display:block;
+    padding:8px 12px;
+    font-size:13.5px;
+    color:var(--gray-mute);
+    text-decoration:none;
+    border-radius:6px;
+  }
+  .submenu li a:hover{ background:var(--bg); color:var(--navy); }
+  .submenu .nested{
+    padding-left:12px;
+  }
+
+  .sidebar-foot{
+    padding:14px 24px 0;
+    border-top:1px solid var(--border);
+    margin-top:12px;
+  }
+  .user-chip{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .user-chip .avatar{
+    width:34px; height:34px;
+    border-radius:50%;
+    background:var(--navy);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:600;
+    flex-shrink:0;
+  }
+  .user-chip .info{ overflow:hidden; }
+  .user-chip .info .email{
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--navy);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .user-chip .info .role{
+    font-size:11px;
+    color:var(--gray-mute);
+  }
+  .logout-btn{
+    width:100%;
+    padding:9px;
+    background:transparent;
+    border:1px solid var(--border);
+    border-radius:6px;
+    color:var(--gray-mute);
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+    font-family:'IBM Plex Sans', sans-serif;
+    transition: all .15s ease;
+  }
+  .logout-btn:hover{ border-color:#c9433a; color:#c9433a; }
+
+  /* ---------- Main ---------- */
+  .main{
+    flex:1;
+    min-width:0;
+  }
+  .topbar{
+    height:64px;
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 32px;
+    position:sticky;
+    top:0;
+    z-index:5;
+  }
+  .topbar h2{
+    font-family:'Source Serif 4', serif;
+    font-size:19px;
+    font-weight:600;
+  }
+  .topbar .date{
+    font-size:13px;
+    color:var(--gray-mute);
+  }
+  .content{
+    padding:32px;
+  }
+  .content .greet{
+    margin-bottom:24px;
+  }
+  .content .greet .kicker{
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .content .greet h3{
+    font-family:'Source Serif 4', serif;
+    font-size:24px;
+    font-weight:600;
+  }
+  .stat-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+    gap:16px;
+    margin-bottom:32px;
+  }
+  .stat-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:20px;
+  }
+  .stat-card .label{
+    font-size:12.5px;
+    color:var(--gray-mute);
+    margin-bottom:10px;
+  }
+  .stat-card .value{
+    font-family:'Source Serif 4', serif;
+    font-size:28px;
+    font-weight:600;
+    color:var(--navy);
+  }
+  .stat-card .delta{
+    font-size:12px;
+    color:var(--slate);
+    margin-top:6px;
+  }
+  .panels{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    gap:20px;
+  }
+  .panel{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:22px;
+  }
+  .panel h4{
+    font-family:'Source Serif 4', serif;
+    font-size:16px;
+    font-weight:600;
+    margin-bottom:16px;
+  }
+  .link-list{ list-style:none; }
+  .link-list li{
+    display:flex;
+    justify-content:space-between;
+    padding:11px 0;
+    border-bottom:1px solid var(--border);
+    font-size:13.5px;
+  }
+  .link-list li:last-child{ border-bottom:none; }
+  .link-list .tag{
+    font-size:11px;
+    color:var(--gray-mute);
+  }
+  .empty-note{
+    font-size:13px;
+    color:var(--gray-mute);
+    line-height:1.7;
+  }
+  @media (max-width: 900px){
+    .panels{ grid-template-columns:1fr; }
+  }
+  @media (max-width: 760px){
+    body{ flex-direction:column; }
+    .sidebar{ width:100%; height:auto; position:relative; }
+  }
+</style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="eyebrow">Departement of Business</div>
+      <h1>Administration Center</h1>
+    </div>
+
+    <nav class="menu">
+      <div class="menu-group">
+        <a class="menu-link active" href="#">Home</a>
+      </div>
+
+      <div class="menu-group">
+        <div class="menu-link" data-toggle>
+          <span>SDM</span><span class="chevron">›</span>
+        </div>
+        <ul class="submenu">
+          <li><a href="#">Regional 1</a></li>
+          <li><a href="#">Regional 2</a></li>
+          <li><a href="#">Data Karyawan</a></li>
+        </ul>
+      </div>
+
+      <div class="menu-group">
+        <div class="menu-link" data-toggle>
+          <span>Disburse National</span><span class="chevron">›</span>
+        </div>
+        <ul class="submenu">
+          <li><a href="#">Regional 1</a></li>
+          <li><a href="#">Regional 2</a></li>
+          <li><a href="#">Java</a></li>
+        </ul>
+      </div>
+
+      <div class="menu-group">
+        <div class="menu-link" data-toggle>
+          <span>Achievement</span><span class="chevron">›</span>
+        </div>
+        <ul class="submenu">
+          <li><a href="#">Achievement Account Officer</a></li>
+          <li class="nested"><a href="#">↳ Regional 1</a></li>
+          <li class="nested"><a href="#">↳ Regional 2</a></li>
+          <li class="nested"><a href="#">↳ Java</a></li>
+          <li><a href="#">Achievement Relationship Officer DPK 0-2</a></li>
+          <li class="nested"><a href="#">↳ Pengajuan Bensin</a></li>
+        </ul>
+      </div>
+
+      <div class="menu-group">
+        <a class="menu-link" href="#">Our Team</a>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="user-chip">
+        <div class="avatar" id="avatarInitial">–</div>
+        <div class="info">
+          <div class="email" id="userEmail">Memuat...</div>
+          <div class="role">Administrator</div>
+        </div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Keluar</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h2>Dashboard</h2>
+      <div class="date" id="todayDate"></div>
+    </div>
+
+    <div class="content">
+      <div class="greet">
+        <div class="kicker">Ringkasan</div>
+        <h3>Selamat datang kembali</h3>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Total Karyawan</div>
+          <div class="value">—</div>
+          <div class="delta">Data belum disambungkan</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Disburse Bulan Ini</div>
+          <div class="value">—</div>
+          <div class="delta">Data belum disambungkan</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Achievement AO</div>
+          <div class="value">—</div>
+          <div class="delta">Data belum disambungkan</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Regional Aktif</div>
+          <div class="value">2</div>
+          <div class="delta">Regional 1 &amp; Regional 2</div>
+        </div>
+      </div>
+
+      <div class="panels">
+        <div class="panel">
+          <h4>Aktivitas Terbaru</h4>
+          <p class="empty-note">Belum ada aktivitas tercatat. Bagian ini akan menampilkan riwayat perubahan data, pengajuan, dan aktivitas tim setelah data mulai disambungkan.</p>
+        </div>
+        <div class="panel">
+          <h4>Akses Cepat</h4>
+          <ul class="link-list">
+            <li>Data Karyawan <span class="tag">SDM</span></li>
+            <li>Pengajuan Bensin <span class="tag">Achievement</span></li>
+            <li>Our Team <span class="tag">Umum</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Auth -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
+      authDomain: "business-admin-center.firebaseapp.com",
+      projectId: "business-admin-center",
+      storageBucket: "business-admin-center.firebasestorage.app",
+      messagingSenderId: "165059982705",
+      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
+      measurementId: "G-TSW82QKX0P"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Proteksi halaman: kalau belum login, lempar balik ke login.html
+    auth.onAuthStateChanged(function(user){
+      if(!user){
+        window.location.href = 'login.html';
+        return;
+      }
+      document.getElementById('userEmail').textContent = user.email;
+      document.getElementById('avatarInitial').textContent = user.email.charAt(0).toUpperCase();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', function(){
+      auth.signOut().then(function(){
+        window.location.href = 'login.html';
+      });
+    });
+
+    // Sidebar accordion
+    document.querySelectorAll('.menu-link[data-toggle]').forEach(function(el){
+      el.addEventListener('click', function(){
+        el.closest('.menu-group').classList.toggle('open');
+      });
+    });
+
+    // Tanggal hari ini
+    document.getElementById('todayDate').textContent = new Date().toLocaleDateString('id-ID', {
+      weekday:'long', year:'numeric', month:'long', day:'numeric'
+    });
+  </script>
+
+</body>
+</html>
