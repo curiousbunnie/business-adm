@@ -433,7 +433,7 @@
       document.getElementById('navHome').classList.add('active');
     }
 
-    // FUNGSI UTAMA UNTUK FILTER DISBURSE (MENGGUNAKAN DUA METODE SEKALIGUS BIAR GAK MISSED)
+    // FUNGSI PAKSA MENGUBAH VALUENYA DROPDOWN DI DALAM IFRAME
     function openDisbursePage(region, targetEl) {
       document.getElementById('homeView').classList.remove('active');
       const iframeContainer = document.getElementById('disburseFrameView');
@@ -449,31 +449,38 @@
         targetEl.classList.add('active');
       }
 
-      const encodedRegion = encodeURIComponent(region);
-      const targetSrc = `DisburseNational.html?region=${encodedRegion}`;
-
-      // 1. Kirim via URL Parameter (Reload URL Iframe)
-      if (iframe.src !== targetSrc) {
-        iframe.src = targetSrc;
+      // Pastikan iframe sudah memuat file
+      if (iframe.src === "about:blank" || !iframe.src.includes('DisburseNational.html')) {
+        iframe.src = 'DisburseNational.html';
       }
 
-      // 2. Kirim via Direct Execution (Jika iframe sudah selesai load)
-      iframe.onload = function() {
+      const applyFilter = () => {
         try {
+          const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+          // Cari elemen dropdown/select di dalam iframe
+          const selectElement = iframeDoc.querySelector('select');
+          
+          if (selectElement) {
+            // Ubah value dropdown di dalam iframe
+            selectElement.value = region;
+            // Trigger event change supaya data langsung ter-filter otomatis oleh script iframe
+            selectElement.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+
+          // Panggil juga fungsi bawaan iframe jika ada
           if (iframe.contentWindow && typeof iframe.contentWindow.openDisbursePage === 'function') {
             iframe.contentWindow.openDisbursePage(region);
           }
         } catch (e) {
-          console.log("Menunggu iframe siap...", e);
+          console.error("Iframe belum siap:", e);
         }
       };
 
-      // Jika iframe sudah ada sebelumnya, eksekusi langsung tanpa nunggu reload
-      try {
-        if (iframe.contentWindow && typeof iframe.contentWindow.openDisbursePage === 'function') {
-          iframe.contentWindow.openDisbursePage(region);
-        }
-      } catch (e) {}
+      // Jalankan langsung dan beri sedikit penundaan (delay) untuk antisipasi
+      applyFilter();
+      iframe.onload = applyFilter;
+      setTimeout(applyFilter, 300);
+      setTimeout(applyFilter, 800);
     }
 
     function clearActiveMenu() {
