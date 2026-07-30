@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Performance Branch Manager — Disburse</title>
+    <title>Dashboard Performance Wilayah & Regional BM (2025 - 2026)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- PapaParse untuk membaca CSV Google Sheets -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         :root {
             --primary: #0f172a;
             --accent: #2563eb;
+            --accent-hover: #1d4ed8;
             --success: #10b981;
+            --warning: #f59e0b;
             --danger: #ef4444;
             --danger-bg: #fee2e2;
             --danger-text: #b91c1c;
@@ -28,7 +29,10 @@
             color: #1e293b;
         }
 
-        .container { max-width: 1800px; margin: 0 auto; }
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
 
         .header-panel {
             display: flex;
@@ -46,18 +50,52 @@
         .header-panel h1 { margin: 0; font-size: 20px; font-weight: 700; color: var(--primary); }
         .header-panel p { margin: 4px 0 0 0; color: #64748b; font-size: 13px; }
         
-        .filter-group { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-        .region-select, .search-input {
-            padding: 10px 16px;
-            font-size: 14px;
-            border: 1px solid #cbd5e1;
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .date-range-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafc;
+            padding: 4px 8px;
+            border: 1px solid var(--border);
             border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .month-select, .region-select, .search-input {
+            padding: 8px 12px;
+            font-size: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
             outline: none;
             background: #ffffff;
-            box-sizing: border-box;
         }
-        .search-input { width: 240px; }
-        .region-select { min-width: 160px; }
+        .region-select { font-weight: 600; color: #0f172a; border-color: #2563eb; }
+        .search-input { width: 160px; }
+
+        .btn-reset, .btn-export {
+            color: white;
+            border: none;
+            padding: 9px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-reset { background-color: var(--accent); }
+        .btn-reset:hover { background-color: var(--accent-hover); }
+        .btn-excel { background-color: #16a34a; }
+        .btn-excel:hover { background-color: #15803d; }
 
         .kpi-grid {
             display: grid;
@@ -81,8 +119,9 @@
             gap: 24px;
             margin-bottom: 24px;
         }
-        @media (max-width: 992px) { .dashboard-content { grid-template-columns: 1fr; } }
-
+        @media (max-width: 992px) {
+            .dashboard-content { grid-template-columns: 1fr; }
+        }
         .section-card {
             background: #ffffff;
             border-radius: 12px;
@@ -107,14 +146,34 @@
 
         .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
         .table-data { width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left; white-space: nowrap; }
-        .table-data th { padding: 10px 8px; border: 1px solid var(--border); text-align: center; font-weight: 600; }
+        .table-data th { padding: 8px 6px; border: 1px solid var(--border); text-align: center; font-weight: 600; }
         .table-data thead tr.main-header th { background: #f1f5f9; color: var(--primary); font-size: 11px; text-transform: uppercase; font-weight: 700; }
+        .table-data thead tr.sub-header th { background: #f8fafc; color: #475569; font-size: 10.5px; }
         .table-data td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
+        
         .num-cell { text-align: right !important; }
         .center-cell { text-align: center !important; }
         
-        .badge-sp { background-color: var(--danger-bg); color: var(--danger-text); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 11px; }
-        .badge-normal { background-color: #d1fae5; color: #065f46; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 11px; }
+        .badge-sp { background-color: var(--danger-bg); color: var(--danger-text); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 11px; display: inline-block; }
+        .badge-normal { background-color: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+        .badge-ignore { background-color: #f1f5f9; color: #94a3b8; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-style: italic; }
+
+        .action-cell { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+
+        .btn-table-action, .btn-table-print {
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-table-action { background-color: var(--accent); }
+        .btn-table-action:hover { background-color: var(--accent-hover); }
+        .btn-table-print { background-color: #0284c7; }
+        .btn-table-print:hover { background-color: #0369a1; }
 
         .table-data tr.row-total td { background: var(--bg-light); font-weight: 700; color: var(--primary); border-top: 2px solid #cbd5e1; }
         .table-data tr:hover td { background-color: #fafafa; }
@@ -126,71 +185,74 @@
 <div class="container">
     <div class="header-panel">
         <div>
-            <h1>Dashboard Monitoring Realisasi Disburse BM</h1>
-            <p>Data terhubung langsung dari Google Spreadsheet secara real-time.</p>
+            <h1 id="mainHeaderTitle">Dashboard Monitoring Performance Wilayah - Branch Manager</h1>
+            <p id="mainHeaderDesc">Analisa pencapaian target kerja Branch Manager seluruh Regional & Java.</p>
         </div>
         <div class="filter-group">
-            <input type="text" id="searchBar" class="search-input" placeholder="Cari Nama BM / Area...">
-            <select class="region-select" id="regionFilter">
-                <option value="ALL">Semua Wilayah</option>
+            <button id="btnResetView" class="btn-reset" style="display: none;" onclick="resetToGlobalView()">← Kembali / Tampilkan Semua BM</button>
+            <input type="text" id="searchBar" class="search-input" placeholder="Cari Nama BM...">
+            
+            <!-- FILTER DYNAMIC REGIONAL & AREA -->
+            <select class="region-select" id="regionalFilter">
+                <option value="ALL">Semua Regional</option>
             </select>
+
+            <select class="region-select" id="areaFilter">
+                <option value="ALL">Semua Area</option>
+            </select>
+
+            <div class="date-range-box" id="rangeFilterWrapper">
+                <span>Dari:</span>
+                <select class="month-select" id="startMonthFilter"></select>
+                <span>s/d:</span>
+                <select class="month-select" id="endMonthFilter"></select>
+            </div>
+
+            <button class="btn-export btn-excel" onclick="exportDataToExcel()" title="Ekspor ke Excel">Excel</button>
         </div>
     </div>
 
-    <div id="loadingText" class="loading">Memuat & mendeteksi data dari Google Sheets...</div>
+    <div id="loadingText" class="loading">Memuat lembar kerja 'BM 2025 - 2026' dari Google Sheets...</div>
 
     <div id="dashboardContentWrapper" style="display: none;">
-        <!-- Card Ringkasan KPI -->
         <div class="kpi-grid">
             <div class="kpi-card">
-                <div class="kpi-title">Total Target Disburse</div>
-                <div class="kpi-value" id="kpiTargetTotal">Rp 0</div>
+                <div class="kpi-title" id="kpiTargetLabel">Total Budget Target (Amount)</div>
+                <div class="kpi-value" id="kpiTargetTotal">-</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Total Disburse (Actual)</div>
-                <div class="kpi-value" id="kpiAcvTotal" style="color: var(--success);">Rp 0</div>
+                <div class="kpi-title" id="kpiAcvLabel">Total Actual Realisasi (Amount)</div>
+                <div class="kpi-value" id="kpiAcvTotal">-</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">Rata-Rata Pencapaian (% Disburse)</div>
-                <div class="kpi-value" id="kpiPctTotal" style="color: var(--accent);">0.00%</div>
+                <div class="kpi-title" id="kpiPctLabel">Rerata Pencapaian (% Amount)</div>
+                <div class="kpi-value" id="kpiPctTotal" style="color: var(--accent);">-</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">BM Perlu Review (&lt; 90%)</div>
-                <div class="kpi-value" id="kpiCountSp" style="color: var(--danger);">0</div>
+                <div class="kpi-title" id="kpiSpLabel">BM Evaluasi Khusus (&lt; 90%)</div>
+                <div class="kpi-value" id="kpiCountSp" style="color: var(--danger);">-</div>
             </div>
         </div>
 
-        <!-- Section Grafik & Warning List -->
-        <div class="dashboard-content">
+        <div class="dashboard-content" id="dashboardMiddleSection">
             <div class="section-card">
-                <h3>Visualisasi Top 10 Disburse / Actual BM</h3>
+                <h3 id="chartTitle">Visualisasi Capaian % AMOUNT Wilayah</h3>
                 <div style="position: relative; height: 320px; width: 100%;">
-                    <canvas id="disburseChart"></canvas>
+                    <canvas id="performanceChart"></canvas>
                 </div>
             </div>
             
-            <div class="section-card">
-                <h3>⚠️ Radar Perhatian Target Disburse (&lt; 90%)</h3>
+            <div class="section-card" id="radarSectionCard">
+                <h3>Radar Perhatian Target (&lt; 90%)</h3>
                 <div class="compliance-list" id="spListWrapper"></div>
             </div>
         </div>
 
-        <!-- Tabel Detail Data -->
         <div class="section-card">
-            <h3>Rekapitulasi Disburse Branch Manager</h3>
+            <h3 id="tableTitle">Rekapitulasi Pencapaian Target</h3>
             <div class="table-wrapper">
-                <table class="table-data">
-                    <thead>
-                        <tr class="main-header">
-                            <th style="width: 40px;">No</th>
-                            <th>Nama Branch Manager</th>
-                            <th>Wilayah / Area</th>
-                            <th>Budget (Target)</th>
-                            <th>Actual (Disburse)</th>
-                            <th>% Ach</th>
-                            <th style="width: 100px;">Status</th>
-                        </tr>
-                    </thead>
+                <table class="table-data" id="mainPerformanceTable">
+                    <thead id="tableHeadContainer"></thead>
                     <tbody id="tableBody"></tbody>
                     <tfoot id="tableFoot"></tfoot>
                 </table>
@@ -200,213 +262,768 @@
 </div>
 
 <script>
-    // Link CSV publik milikmu
-    const GOOGLE_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQSCzPxAjT6nS1TtSScDr3i_G45ZQ544c9cjMHQtReAsi6tdgdUvmwE7ZY65McPp2775B06ItlUoXdg/pub?gid=1097632755&single=true&output=csv";
+    const SPREADSHEET_ID = '1ggT18d7WqA0PLI4AOQ96VYrQdcg7mt0RB8V59ZSF5ns'; 
+    const SHEET_NAME = 'BM 2025 - 2026';
+    
+    const BULAN_LABELS = [
+        "Januari 2025", "Februari 2025", "Maret 2025", "April 2025", "Mei 2025", "Juni 2025",
+        "Juli 2025", "Agustus 2025", "September 2025", "Oktober 2025", "November 2025", "Desember 2025",
+        "Januari 2026", "Februari 2026", "Maret 2026", "April 2026", "Mei 2026", "Juni 2026"
+    ];
 
-    let processedBMData = [];
-    let disburseChartInstance = null;
+    let rawRowsData = [];
+    let allKaryawanHistory = []; 
+    let chartInstance = null;
+    let selectedBMName = null;   
 
-    // Helper: Mengubah teks angka acakadut/rupiah menjadi angka murni
-    function cleanNumber(val) {
-        if (val === undefined || val === null || val === "") return 0;
-        if (typeof val === 'number') return val;
+    function initMonthDropdowns() {
+        const startSelect = document.getElementById('startMonthFilter');
+        const endSelect = document.getElementById('endMonthFilter');
         
-        let str = val.toString().trim().replace(/Rp\s?/gi, '');
-        if (str.includes('.') && str.includes(',')) {
-            str = str.replace(/\./g, '').replace(/,/g, '.');
-        } else if (str.includes(',')) {
-            str = str.replace(/,/g, '.');
-        } else if (str.includes('.')) {
-            let parts = str.split('.');
-            if (parts[parts.length - 1].length === 3 || parts.length > 2) {
-                str = str.replace(/\./g, '');
-            }
+        startSelect.innerHTML = '';
+        endSelect.innerHTML = '';
+
+        BULAN_LABELS.forEach((label, idx) => {
+            let optStart = new Option(label, idx);
+            let optEnd = new Option(label, idx);
+            
+            if (idx === 0) optStart.selected = true; 
+            if (idx === BULAN_LABELS.length - 1) optEnd.selected = true; 
+
+            startSelect.add(optStart);
+            endSelect.add(optEnd);
+        });
+    }
+
+    function parseNum(cell) {
+        if (!cell) return 0;
+        if (cell.v !== undefined && cell.v !== null && typeof cell.v === 'number') return cell.v;
+        let str = (cell.f || cell.v || "").toString().trim().replace(/Rp\s?/g, '').replace(/\s/g, '');
+        if (str === "") return 0;
+        let clean = str;
+        if (clean.includes('.') && clean.includes(',')) clean = clean.replace(/\./g, '').replace(/,/g, '.');
+        else if (clean.includes(',')) clean = clean.replace(/,/g, '.');
+        else if (clean.includes('.')) {
+            let parts = clean.split('.');
+            if (parts[parts.length - 1].length === 3 || parts.length > 2) clean = clean.replace(/\./g, '');
         }
-        return parseFloat(str) || 0;
+        return parseFloat(clean) || 0;
     }
 
-    function formatRupiah(num) {
-        return "Rp " + parseFloat(num).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    }
-
-    // Helper: Fleksibel mencari value berdasarkan variasi nama kolom Spreadsheet
-    function getValFromRow(row, possibleKeys) {
-        for (let pKey of possibleKeys) {
-            for (let actualKey in row) {
-                if (actualKey.trim().toLowerCase() === pKey.toLowerCase()) {
-                    return row[actualKey];
-                }
-            }
+    function parsePercentFromSheet(cell) {
+        if (!cell) return { num: 0, text: '0.00%' };
+        let textVal = (cell.f || cell.v || "0.00").toString().trim();
+        let numVal = cell.v;
+        if (typeof numVal !== 'number') {
+            let clean = textVal.replace(/%/g, '').replace(/,/g, '.').trim();
+            numVal = parseFloat(clean) || 0;
+            if (!textVal.includes('%')) numVal = numVal * 100;
+        } else {
+            if (textVal.includes('%') || numVal <= 5.0) numVal = numVal * 100;
         }
-        return null;
+        return { num: numVal, text: numVal.toFixed(2) + '%' };
     }
 
-    function loadSpreadsheetData() {
+    function formatMataUangSheet(number) {
+        return parseFloat(number).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }
+
+    function parseText(cell) {
+        if (!cell) return "-";
+        return (cell.v !== undefined && cell.v !== null) ? cell.v.toString().trim() : (cell.f || "-").toString().trim();
+    }
+
+    function initFetch() {
+        initMonthDropdowns();
         document.getElementById('loadingText').style.display = 'block';
         document.getElementById('dashboardContentWrapper').style.display = 'none';
 
-        Papa.parse(GOOGLE_SHEETS_CSV_URL, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                let rawData = results.data;
+        const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
-                processedBMData = rawData.map(row => {
-                    let nama = getValFromRow(row, ['NAMA BM', 'NAMA_BM', 'BM', 'NAMA', 'NAME']) || '-';
-                    if (!nama || nama === '-' || nama.toLowerCase().includes('total')) return null;
-
-                    let wilayah = getValFromRow(row, ['WILAYAH EXISTING', 'WILAYAH', 'AREA', 'REGIONAL', 'REG']) || 'Lainnya';
-
-                    let rawBudget = getValFromRow(row, ['JAN 2025 BUDGET', 'BUDGET', 'TARGET', 'JAN_2025_BUDGET']);
-                    let budget = cleanNumber(rawBudget);
-
-                    let rawActual = getValFromRow(row, ['JAN 2025 ACTUAL', 'ACTUAL', 'DISBURSE', 'REALISASI', 'JAN_2025_ACTUAL']);
-                    let actual = cleanNumber(rawActual);
-
-                    let rawAch = getValFromRow(row, ['% AMOUNT', 'ACH', 'PENCAPAIAN', '%', 'Unnamed: 14']);
-                    let pctAch = cleanNumber(rawAch);
-                    
-                    if (pctAch === 0 && budget > 0) {
-                        pctAch = (actual / budget) * 100;
-                    }
-
-                    return {
-                        nama: nama.toString().trim(),
-                        wilayah: wilayah.toString().trim(),
-                        budget: budget,
-                        actual: actual,
-                        pctAch: pctAch
-                    };
-                }).filter(item => item !== null);
-
-                populateRegionFilter();
-                renderDashboard();
-
+        fetch(url)
+            .then(res => res.text())
+            .then(raw => {
+                const json = JSON.parse(raw.substr(47).slice(0, -2));
+                rawRowsData = json.table.rows;
                 document.getElementById('loadingText').style.display = 'none';
                 document.getElementById('dashboardContentWrapper').style.display = 'block';
-            },
-            error: function(err) {
-                document.getElementById('loadingText').innerHTML = "❌ Gagal mengambil data CSV. Pastikan Spreadsheet tetap terpublikasi.";
+                
+                extractFullHistory();
+                populateRegionalDropdown();
+                updateAreaDropdown();
+                processAndRender();
+            })
+            .catch(err => {
+                document.getElementById('loadingText').innerHTML = `Gagal memuat data sheet. Pastikan spreadsheet bisa diakses publik.`;
+                console.error(err);
+            });
+    }
+
+    function extractFullHistory() {
+        allKaryawanHistory = [];
+        if (rawRowsData.length === 0) return;
+
+        rawRowsData.forEach((row, index) => {
+            if (!row.c || !row.c[6]) return;
+
+            let namaBM = (row.c[6].v || row.c[6].f || "").toString().trim();
+            let namaLower = namaBM.toLowerCase();
+
+            if (namaBM === "" || namaLower === "total" || namaLower === "grand total" || namaLower.includes("nama bm") || index < 2) return;
+
+            let regVal = row.c[1] ? (row.c[1].v || row.c[1].f || 'Tanpa Regional').toString().trim() : 'Tanpa Regional';
+            let wilayahVal = row.c[4] ? (row.c[4].v || row.c[4].f || 'Tanpa Area').toString().trim() : 'Tanpa Area';
+
+            let monthlyHistory = [];
+            const BASE_INDEX = 8;
+            const COLS_PER_MONTH = 7;
+
+            for (let m = 0; m < 18; m++) {
+                let colStart = BASE_INDEX + (m * COLS_PER_MONTH);
+                monthlyHistory.push({
+                    bulanLabel: BULAN_LABELS[m],
+                    bNoa: parseNum(row.c[colStart]),
+                    bAmount: parseNum(row.c[colStart + 1]),
+                    ao: parseText(row.c[colStart + 2]),
+                    aNoa: parseNum(row.c[colStart + 3]),
+                    aPctNoaNum: parsePercentFromSheet(row.c[colStart + 4]).num,
+                    aPctNoaStr: parsePercentFromSheet(row.c[colStart + 4]).text,
+                    aAmount: parseNum(row.c[colStart + 5]),
+                    aPctAmountNum: parsePercentFromSheet(row.c[colStart + 6]).num,
+                    aPctAmountStr: parsePercentFromSheet(row.c[colStart + 6]).text
+                });
+            }
+
+            allKaryawanHistory.push({
+                nama: namaBM,
+                wilayah: wilayahVal,
+                regional: regVal,
+                history: monthlyHistory
+            });
+        });
+    }
+
+    function populateRegionalDropdown() {
+        const regionalSelect = document.getElementById('regionalFilter');
+        let regSet = new Set();
+        allKaryawanHistory.forEach(item => { if (item.regional) regSet.add(item.regional); });
+
+        let opts = '<option value="ALL">Semua Regional</option>';
+        Array.from(regSet).sort().forEach(r => { opts += `<option value="${r}">${r}</option>`; });
+        regionalSelect.innerHTML = opts;
+    }
+
+    function updateAreaDropdown() {
+        const selectedRegional = document.getElementById('regionalFilter').value;
+        const areaSelect = document.getElementById('areaFilter');
+
+        let areaSet = new Set();
+        allKaryawanHistory.forEach(item => {
+            if (selectedRegional === 'ALL' || item.regional === selectedRegional) {
+                if (item.wilayah) areaSet.add(item.wilayah);
             }
         });
+
+        let opts = '<option value="ALL">Semua Area</option>';
+        Array.from(areaSet).sort().forEach(a => { opts += `<option value="${a}">${a}</option>`; });
+        areaSelect.innerHTML = opts;
     }
 
-    function populateRegionFilter() {
-        const regionSelect = document.getElementById('regionFilter');
-        let currentSelection = regionSelect.value;
-        let setWilayah = new Set();
-        
-        processedBMData.forEach(i => { if(i.wilayah) setWilayah.add(i.wilayah); });
+    function processAndRender() {
+        let startIdx = parseInt(document.getElementById('startMonthFilter').value);
+        let endIdx = parseInt(document.getElementById('endMonthFilter').value);
 
-        let html = '<option value="ALL">Semua Wilayah</option>';
-        Array.from(setWilayah).sort().forEach(w => {
-            html += `<option value="${w}">${w}</option>`;
-        });
-        regionSelect.innerHTML = html;
-        if(Array.from(setWilayah).includes(currentSelection)) regionSelect.value = currentSelection;
+        if (startIdx > endIdx) {
+            let temp = startIdx; startIdx = endIdx; endIdx = temp;
+            document.getElementById('startMonthFilter').value = startIdx;
+            document.getElementById('endMonthFilter').value = endIdx;
+        }
+
+        if (selectedBMName) {
+            renderSingleBMDetail(selectedBMName, startIdx, endIdx);
+        } else {
+            applyFiltersAndRender(startIdx, endIdx);
+        }
     }
 
-    function renderDashboard() {
-        const searchTxt = document.getElementById('searchBar').value.toLowerCase().trim();
-        const selectedRegion = document.getElementById('regionFilter').value;
+    function applyFiltersAndRender(startIdx, endIdx) {
+        const txt = document.getElementById('searchBar').value.toLowerCase().trim();
+        const selectedRegional = document.getElementById('regionalFilter').value;
+        const selectedArea = document.getElementById('areaFilter').value;
 
-        const filtered = processedBMData.filter(item => {
-            let matchName = item.nama.toLowerCase().includes(searchTxt) || item.wilayah.toLowerCase().includes(searchTxt);
-            let matchRegion = (selectedRegion === 'ALL' || item.wilayah === selectedRegion);
-            return matchName && matchRegion;
+        const startLabel = BULAN_LABELS[startIdx];
+        const endLabel = BULAN_LABELS[endIdx];
+        const rangeText = (startIdx === endIdx) ? startLabel : `${startLabel} s/d ${endLabel}`;
+
+        let regionalLabelText = selectedRegional === 'ALL' ? 'Semua Regional' : selectedRegional;
+        document.getElementById('mainHeaderTitle').innerText = `Dashboard Monitoring Performance BM — ${regionalLabelText}`;
+        document.getElementById('tableTitle').innerText = `Matriks Rekapitulasi Target vs Realisasi (${regionalLabelText}) - Periode: ${rangeText}`;
+        document.getElementById('chartTitle').innerText = `Visualisasi Capaian % AMOUNT BM Top 10 (${regionalLabelText}) - Periode: ${rangeText}`;
+
+        let aggregatedData = allKaryawanHistory.map(bm => {
+            let rangeMonths = bm.history.slice(startIdx, endIdx + 1);
+            let totalBNoa = 0, totalBAmount = 0, totalANoa = 0, totalAAmount = 0;
+            let lastAo = rangeMonths[rangeMonths.length - 1].ao;
+
+            rangeMonths.forEach(m => {
+                totalBNoa += m.bNoa;
+                totalBAmount += m.bAmount;
+                totalANoa += m.aNoa;
+                totalAAmount += m.aAmount;
+            });
+
+            let pctNoa = totalBNoa > 0 ? (totalANoa / totalBNoa) * 100 : 0;
+            let pctAmount = totalBAmount > 0 ? (totalAAmount / totalBAmount) * 100 : 0;
+
+            return {
+                nama: bm.nama,
+                regional: bm.regional,
+                wilayah: bm.wilayah,
+                bNoa: totalBNoa,
+                bAmount: totalBAmount,
+                ao: lastAo,
+                aNoa: totalANoa,
+                aPctNoaStr: pctNoa.toFixed(2) + '%',
+                aAmount: totalAAmount,
+                aPctAmountNum: pctAmount,
+                aPctAmountStr: pctAmount.toFixed(2) + '%'
+            };
         });
 
-        let totalBudget = 0, totalActual = 0, countLow = 0;
+        // Dynamic Filtering
+        const filtered = aggregatedData.filter(item => {
+            const matchName = item.nama.toLowerCase().includes(txt);
+            const matchRegional = (selectedRegional === 'ALL' || item.regional === selectedRegional);
+            const matchArea = (selectedArea === 'ALL' || item.wilayah === selectedArea);
+            return matchName && matchRegional && matchArea;
+        });
+
+        let grandBNoa = 0, grandBAmount = 0, grandANoa = 0, grandAAmount = 0, countSp = 0;
         let tableHtml = '', spListHtml = '';
+        let minAch = 90.0; 
+
+        let headHtml = `
+            <tr class="main-header">
+                <th rowspan="2" style="width: 40px;">No</th>
+                <th rowspan="2">Nama Branch Manager</th>
+                <th rowspan="2">Regional</th>
+                <th rowspan="2">Area</th>
+                <th colspan="2">BUDGET (${rangeText})</th>
+                <th rowspan="2" style="background: #eff6ff;">AO Terakhir</th>
+                <th colspan="4">ACTUAL (${rangeText})</th>
+                <th rowspan="2" style="width: 100px;">Status</th>
+            </tr>
+            <tr class="sub-header">
+                <th>NOA</th>
+                <th>AMOUNT</th>
+                <th>NOA</th>
+                <th>% NOA</th>
+                <th>AMOUNT</th>
+                <th>% AMOUNT (+ AKSI)</th>
+            </tr>
+        `;
+        document.getElementById('tableHeadContainer').innerHTML = headHtml;
 
         filtered.forEach((item, index) => {
-            totalBudget += item.budget;
-            totalActual += item.actual;
+            grandBNoa += item.bNoa;
+            grandBAmount += item.bAmount;
+            grandANoa += item.aNoa;
+            grandAAmount += item.aAmount;
 
-            let isLow = item.pctAch < 90 && item.budget > 0;
-            if (isLow) {
-                countLow++;
+            let isNoTarget = (item.bAmount === 0);
+            let isLowPerformance = !isNoTarget && (item.aPctAmountNum < minAch);
+            let styleAchAmount = isLowPerformance ? "font-weight:700; color:var(--danger);" : (isNoTarget ? "color:#94a3b8;" : "font-weight:600; color:var(--success);");
+
+            let statusBadge = `<span class="badge-normal">On Track</span>`;
+            if (isNoTarget) {
+                statusBadge = `<span class="badge-ignore">No Target</span>`;
+            } else if (isLowPerformance) {
+                countSp++;
+                statusBadge = `<span class="badge-sp">Perlu Review</span>`;
                 spListHtml += `
                     <div class="compliance-item">
-                        <div class="name">${item.nama} (${item.wilayah})</div>
-                        <div class="sp-status">⚠️ Disburse di bawah target (< 90%)</div>
-                        <div style="font-size: 11px; color: #7f1d1d; margin-top: 2px;">
-                            Capaian Disburse: <strong>${formatRupiah(item.actual)}</strong> (${item.pctAch.toFixed(2)}%)
-                        </div>
+                        <div class="name">${item.nama} (${item.regional} - ${item.wilayah})</div>
+                        <div class="sp-status">⚠️ Target Capaian Dibawah &lt; 90%</div>
+                        <div style="font-size: 11px; color: #7f1d1d; margin-top: 2px;">Capaian Rerata Periode: ${item.aPctAmountStr}</div>
                     </div>
                 `;
             }
-
-            let achStyle = isLow ? "color:var(--danger); font-weight:700;" : "color:var(--success); font-weight:600;";
-            let statusBadge = isLow ? `<span class="badge-sp">Perlu Review</span>` : `<span class="badge-normal">On Track</span>`;
 
             tableHtml += `
                 <tr>
                     <td class="center-cell" style="color: #64748b;">${index + 1}</td>
                     <td style="font-weight:600; color:var(--primary);">${item.nama}</td>
+                    <td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-weight:600;">${item.regional}</span></td>
                     <td><strong>${item.wilayah}</strong></td>
-                    <td class="num-cell">${formatRupiah(item.budget)}</td>
-                    <td class="num-cell" style="font-weight:600;">${formatRupiah(item.actual)}</td>
-                    <td class="num-cell" style="${achStyle}">${item.pctAch.toFixed(2)}%</td>
+                    <td class="num-cell">${formatMataUangSheet(item.bNoa)}</td>
+                    <td class="num-cell">${formatMataUangSheet(item.bAmount)}</td>
+                    <td class="center-cell" style="background: #f8fafc; font-weight: 600; color: var(--accent);">${item.ao}</td>
+                    <td class="num-cell">${formatMataUangSheet(item.aNoa)}</td>
+                    <td class="num-cell" style="font-weight:500;">${isNoTarget ? '0.00%' : item.aPctNoaStr}</td>
+                    <td class="num-cell">${formatMataUangSheet(item.aAmount)}</td>
+                    <td>
+                        <div class="action-cell">
+                            <span style="${styleAchAmount}">${isNoTarget ? '0.00%' : item.aPctAmountStr}</span>
+                            <button class="btn-table-action" onclick="showBMDetail('${escapeHtml(item.nama)}')">Detail</button>
+                            <button class="btn-table-print" onclick="printBMDetail('${escapeHtml(item.nama)}')">Print</button>
+                        </div>
+                    </td>
                     <td class="center-cell">${statusBadge}</td>
                 </tr>
             `;
         });
 
-        document.getElementById('tableBody').innerHTML = tableHtml || `<tr><td colspan="7" style="text-align:center; padding:30px;">Data tidak ditemukan.</td></tr>`;
-        document.getElementById('spListWrapper').innerHTML = spListHtml || '<div style="color:#64748b; font-size:13px; text-align:center; padding:25px;">✅ Seluruh BM telah mencapai target Disburse (≥ 90%).</div>';
+        document.getElementById('tableBody').innerHTML = tableHtml || `<tr><td colspan="12" style="text-align:center; padding:30px;">Data tidak ditemukan.</td></tr>`;
+        document.getElementById('spListWrapper').innerHTML = spListHtml || '<div style="color:#64748b; font-size:13px; text-align:center; padding:25px;">✅ Semua BM berada di zona aman (&ge; 90%).</div>';
 
-        let avgPct = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0;
-        document.getElementById('kpiTargetTotal').innerText = formatRupiah(totalBudget);
-        document.getElementById('kpiAcvTotal').innerText = formatRupiah(totalActual);
-        document.getElementById('kpiPctTotal').innerText = avgPct.toFixed(2) + '%';
-        document.getElementById('kpiCountSp').innerText = `${countLow} BM`;
+        let avgPctNoa = grandBNoa > 0 ? (grandANoa / grandBNoa) * 100 : 0;
+        let avgPctAmount = grandBAmount > 0 ? (grandAAmount / grandBAmount) * 100 : 0;
 
-        document.getElementById('tableFoot').innerHTML = `
+        let footHtml = `
             <tr class="row-total">
-                <td colspan="3" class="center-cell">TOTAL KESELURUHAN</td>
-                <td class="num-cell">${formatRupiah(totalBudget)}</td>
-                <td class="num-cell">${formatRupiah(totalActual)}</td>
-                <td class="num-cell" style="color:var(--accent);">${avgPct.toFixed(2)}%</td>
+                <td colspan="4" class="center-cell">TOTAL ${regionalLabelText.toUpperCase()} (${rangeText})</td>
+                <td class="num-cell">${formatMataUangSheet(grandBNoa)}</td>
+                <td class="num-cell">${formatMataUangSheet(grandBAmount)}</td>
+                <td class="center-cell" style="background: #e2e8f0;">-</td>
+                <td class="num-cell">${formatMataUangSheet(grandANoa)}</td>
+                <td class="num-cell">${avgPctNoa.toFixed(2)}%</td>
+                <td class="num-cell">${formatMataUangSheet(grandAAmount)}</td>
+                <td class="num-cell" style="color: var(--accent);">${avgPctAmount.toFixed(2)}%</td>
                 <td></td>
             </tr>
         `;
+        document.getElementById('tableFoot').innerHTML = footHtml;
 
-        const top10Data = [...filtered].sort((a, b) => b.actual - a.actual).slice(0, 10);
-        renderDisburseChart(top10Data);
+        document.getElementById('kpiTargetLabel').innerText = `Total Budget (${rangeText})`;
+        document.getElementById('kpiAcvLabel').innerText = `Total Actual (${rangeText})`;
+        document.getElementById('kpiPctLabel').innerText = `Rerata % Amount (${rangeText})`;
+        document.getElementById('kpiSpLabel').innerText = `BM Perlu Review (< 90%)`;
+
+        document.getElementById('kpiTargetTotal').innerText = "Rp " + formatMataUangSheet(grandBAmount);
+        document.getElementById('kpiAcvTotal').innerText = "Rp " + formatMataUangSheet(grandAAmount);
+        document.getElementById('kpiPctTotal').innerText = avgPctAmount.toFixed(2) + '%';
+        document.getElementById('kpiCountSp').innerText = `${countSp} Branch Manager`;
+
+        const sortedDataForChart = [...filtered].sort((a, b) => b.aPctAmountNum - a.aPctAmountNum);
+        const top10Labels = sortedDataForChart.slice(0, 10).map(item => `${item.nama} (${item.wilayah})`);
+        const top10Values = sortedDataForChart.slice(0, 10).map(item => item.aPctAmountNum);
+
+        renderChart(top10Labels, top10Values);
     }
 
-    function renderDisburseChart(topData) {
-        const ctx = document.getElementById('disburseChart').getContext('2d');
-        if (disburseChartInstance) { disburseChartInstance.destroy(); }
+    function showBMDetail(namaBM) {
+        selectedBMName = namaBM;
+        document.getElementById('btnResetView').style.display = 'inline-block';
+        document.getElementById('searchBar').style.display = 'none';
+        document.getElementById('regionalFilter').style.display = 'none';
+        document.getElementById('areaFilter').style.display = 'none';
+        document.getElementById('radarSectionCard').style.display = 'none';
+        document.getElementById('dashboardMiddleSection').style.gridTemplateColumns = '1fr';
 
-        disburseChartInstance = new Chart(ctx, {
+        processAndRender();
+    }
+
+    function renderSingleBMDetail(namaBM, startIdx, endIdx) {
+        const bmData = allKaryawanHistory.find(item => item.nama === namaBM);
+        if (!bmData) return;
+
+        const startLabel = BULAN_LABELS[startIdx];
+        const endLabel = BULAN_LABELS[endIdx];
+        const rangeText = (startIdx === endIdx) ? startLabel : `${startLabel} s/d ${endLabel}`;
+
+        document.getElementById('mainHeaderTitle').innerText = `Analisis Performance BM: ${bmData.nama}`;
+        document.getElementById('mainHeaderDesc').innerText = `Menampilkan tren progres bulanan area ${bmData.wilayah} (${bmData.regional}) rentang ${rangeText}.`;
+
+        document.getElementById('tableTitle').innerText = `Detail Pencapaian - ${bmData.nama} (${rangeText})`;
+        document.getElementById('chartTitle').innerText = `Grafik Progres Realisasi vs Target - ${bmData.nama}`;
+
+        let headHtml = `
+            <tr class="main-header">
+                <th rowspan="2">Bulan / Periode</th>
+                <th colspan="2">BUDGET TARGET</th>
+                <th rowspan="2" style="background: #eff6ff;">Jumlah AO</th>
+                <th colspan="4">ACTUAL REALISASI</th>
+            </tr>
+            <tr class="sub-header">
+                <th>NOA</th>
+                <th>AMOUNT</th>
+                <th>NOA</th>
+                <th>% NOA</th>
+                <th>AMOUNT</th>
+                <th>% AMOUNT</th>
+            </tr>
+        `;
+        document.getElementById('tableHeadContainer').innerHTML = headHtml;
+
+        let tableHtml = '';
+        let totalBNoa = 0, totalBAmount = 0, totalANoa = 0, totalAAmount = 0;
+        let selectedRangeHistory = bmData.history.slice(startIdx, endIdx + 1);
+
+        selectedRangeHistory.forEach(m => {
+            totalBNoa += m.bNoa;
+            totalBAmount += m.bAmount;
+            totalANoa += m.aNoa;
+            totalAAmount += m.aAmount;
+
+            let isNoTarget = (m.bAmount === 0);
+            let styleAch = isNoTarget ? "color:#94a3b8;" : (m.aPctAmountNum < 90 ? "font-weight:700; color:var(--danger);" : "font-weight:700; color:var(--success);");
+
+            tableHtml += `
+                <tr>
+                    <td style="font-weight: 600; color: var(--primary);">${m.bulanLabel}</td>
+                    <td class="num-cell">${formatMataUangSheet(m.bNoa)}</td>
+                    <td class="num-cell">${formatMataUangSheet(m.bAmount)}</td>
+                    <td class="center-cell" style="background: #f8fafc; font-weight: 600; color: var(--accent);">${m.ao}</td>
+                    <td class="num-cell">${formatMataUangSheet(m.aNoa)}</td>
+                    <td class="num-cell">${isNoTarget ? '0.00%' : m.aPctNoaStr}</td>
+                    <td class="num-cell">${formatMataUangSheet(m.aAmount)}</td>
+                    <td class="num-cell" style="${styleAch}">${isNoTarget ? '0.00%' : m.aPctAmountStr}</td>
+                </tr>
+            `;
+        });
+        document.getElementById('tableBody').innerHTML = tableHtml;
+
+        let avgPctNoa = totalBNoa > 0 ? (totalANoa / totalBNoa) * 100 : 0;
+        let avgPctAmount = totalBAmount > 0 ? (totalAAmount / totalBAmount) * 100 : 0;
+
+        let footHtml = `
+            <tr class="row-total">
+                <td>TOTAL PERIODE TERPILIH</td>
+                <td class="num-cell">${formatMataUangSheet(totalBNoa)}</td>
+                <td class="num-cell">${formatMataUangSheet(totalBAmount)}</td>
+                <td class="center-cell" style="background: #e2e8f0;">-</td>
+                <td class="num-cell">${formatMataUangSheet(totalANoa)}</td>
+                <td class="num-cell">${avgPctNoa.toFixed(2)}%</td>
+                <td class="num-cell">${formatMataUangSheet(totalAAmount)}</td>
+                <td class="num-cell" style="color: var(--accent);">${avgPctAmount.toFixed(2)}%</td>
+            </tr>
+        `;
+        document.getElementById('tableFoot').innerHTML = footHtml;
+
+        let monthsBelow90 = selectedRangeHistory.filter(m => m.bAmount > 0 && m.aPctAmountNum < 90).length;
+
+        document.getElementById('kpiTargetLabel').innerText = `Target Budget (${rangeText})`;
+        document.getElementById('kpiAcvLabel').innerText = `Actual Realisasi (${rangeText})`;
+        document.getElementById('kpiPctLabel').innerText = `Rerata % Amount`;
+        document.getElementById('kpiSpLabel').innerText = `Bulan Defisit (< 90%)`;
+
+        document.getElementById('kpiTargetTotal').innerText = "Rp " + formatMataUangSheet(totalBAmount);
+        document.getElementById('kpiAcvTotal').innerText = "Rp " + formatMataUangSheet(totalAAmount);
+        document.getElementById('kpiPctTotal').innerText = avgPctAmount.toFixed(2) + "%";
+        document.getElementById('kpiCountSp').innerText = `${monthsBelow90} Bulan`;
+
+        renderLineChartForSingleBM(selectedRangeHistory);
+    }
+
+    function printBMDetail(namaBM) {
+        const bmData = allKaryawanHistory.find(item => item.nama === namaBM);
+        if (!bmData) {
+            alert("Data Branch Manager tidak ditemukan!");
+            return;
+        }
+
+        let startIdx = parseInt(document.getElementById('startMonthFilter').value);
+        let endIdx = parseInt(document.getElementById('endMonthFilter').value);
+        if (startIdx > endIdx) { let t = startIdx; startIdx = endIdx; endIdx = t; }
+
+        const startLabel = BULAN_LABELS[startIdx];
+        const endLabel = BULAN_LABELS[endIdx];
+        const rangeText = (startIdx === endIdx) ? startLabel : `${startLabel} s/d ${endLabel}`;
+
+        let selectedRangeHistory = bmData.history.slice(startIdx, endIdx + 1);
+
+        let totalBNoa = 0, totalBAmount = 0, totalANoa = 0, totalAAmount = 0;
+        let monthsDeficit = 0;
+        let rowsHtml = '';
+
+        let chartLabels = [];
+        let chartTargetAmounts = [];
+        let chartActualAmounts = [];
+
+        selectedRangeHistory.forEach(m => {
+            totalBNoa += m.bNoa;
+            totalBAmount += m.bAmount;
+            totalANoa += m.aNoa;
+            totalAAmount += m.aAmount;
+
+            chartLabels.push(m.bulanLabel);
+            chartTargetAmounts.push(m.bAmount);
+            chartActualAmounts.push(m.aAmount);
+
+            let isNoTarget = (m.bAmount === 0);
+            if (m.bAmount > 0 && m.aPctAmountNum < 90) monthsDeficit++;
+
+            let styleAch = isNoTarget ? "color:#94a3b8;" : (m.aPctAmountNum < 90 ? "color:#dc2626; font-weight:700;" : "color:#16a34a; font-weight:700;");
+
+            rowsHtml += `
+                <tr>
+                    <td style="font-weight:600;">${m.bulanLabel}</td>
+                    <td style="text-align:right;">${formatMataUangSheet(m.bNoa)}</td>
+                    <td style="text-align:right;">${formatMataUangSheet(m.bAmount)}</td>
+                    <td style="text-align:center;">${m.ao}</td>
+                    <td style="text-align:right;">${formatMataUangSheet(m.aNoa)}</td>
+                    <td style="text-align:right;">${isNoTarget ? '0.00%' : m.aPctNoaStr}</td>
+                    <td style="text-align:right;">${formatMataUangSheet(m.aAmount)}</td>
+                    <td style="text-align:right; ${styleAch}">${isNoTarget ? '0.00%' : m.aPctAmountStr}</td>
+                </tr>
+            `;
+        });
+
+        let avgPctNoa = totalBNoa > 0 ? (totalANoa / totalBNoa) * 100 : 0;
+        let avgPctAmount = totalBAmount > 0 ? (totalAAmount / totalBAmount) * 100 : 0;
+
+        const printWindow = window.open('', '_blank');
+        
+        const printContent = `
+            <!DOCTYPE html>
+            <html lang="id">
+            <head>
+                <meta charset="UTF-8">
+                <title>Laporan Performance - ${bmData.nama}</title>
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>
+                <style>
+                    body { font-family: 'Segoe UI', sans-serif; padding: 20px; color: #1e293b; background: #fff; }
+                    .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 16px; }
+                    .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; color: #0f172a; }
+                    .header p { margin: 4px 0 0 0; color: #64748b; font-size: 12px; }
+                    
+                    .meta-info { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 12px; background: #f8fafc; padding: 12px 16px; border-radius: 8px; border: 1px solid #e2e8f0; }
+
+                    .stats-grid { display: flex; gap: 10px; margin-bottom: 18px; }
+                    .stats-card { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 12px; border-radius: 6px; text-align: center; }
+                    .stats-card .title { font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 2px; }
+                    .stats-card .value { font-size: 15px; font-weight: 700; color: #0f172a; }
+                    .stats-card .value.blue { color: #2563eb; }
+                    .stats-card .value.red { color: #dc2626; }
+
+                    .chart-container { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-bottom: 20px; position: relative; height: 210px; }
+                    .chart-title { font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 8px; text-transform: uppercase; }
+
+                    table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-bottom: 15px; }
+                    th, td { border: 1px solid #cbd5e1; padding: 6px 8px; }
+                    th { background-color: #f1f5f9; font-weight: 700; text-transform: uppercase; text-align: center; color: #334155; }
+                    .total-row td { background-color: #f8fafc; font-weight: 700; border-top: 2px solid #0f172a; color: #0f172a; }
+
+                    .footer-note { text-align: right; font-size: 9.5px; color: #94a3b8; margin-top: 20px; }
+                    @media print { 
+                        body { padding: 0; } 
+                        @page { size: A4 portrait; margin: 1cm; } 
+                        .chart-container { page-break-inside: avoid; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Laporan Performance Branch Manager</h1>
+                    <p>Regional: ${bmData.regional} - Data Pencapaian Target vs Realisasi</p>
+                </div>
+
+                <div class="meta-info">
+                    <div>
+                        <strong>Nama BM:</strong> ${bmData.nama}<br>
+                        <strong>Wilayah:</strong> ${bmData.wilayah}<br>
+                        <strong>Regional:</strong> ${bmData.regional}
+                    </div>
+                    <div style="text-align: right;">
+                        <strong>Periode:</strong> ${rangeText}<br>
+                        <strong>Tanggal Cetak:</strong> ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stats-card">
+                        <div class="title">Total Target Budget</div>
+                        <div class="value">Rp ${formatMataUangSheet(totalBAmount)}</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="title">Total Actual Realisasi</div>
+                        <div class="value">Rp ${formatMataUangSheet(totalAAmount)}</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="title">Rerata % Amount</div>
+                        <div class="value blue">${avgPctAmount.toFixed(2)}%</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="title">Bulan Defisit (&lt; 90%)</div>
+                        <div class="value red">${monthsDeficit} Bulan</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">Grafik Progres Realisasi vs Target (Amount)</div>
+                    <div style="height: 175px; width: 100%;">
+                        <canvas id="printChartCanvas"></canvas>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th rowspan="2">Bulan / Periode</th>
+                            <th colspan="2">BUDGET TARGET</th>
+                            <th rowspan="2">Jumlah AO</th>
+                            <th colspan="4">ACTUAL REALISASI</th>
+                        </tr>
+                        <tr>
+                            <th>NOA</th>
+                            <th>AMOUNT</th>
+                            <th>NOA</th>
+                            <th>% NOA</th>
+                            <th>AMOUNT</th>
+                            <th>% AMOUNT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td>TOTAL PERIODE (${rangeText})</td>
+                            <td style="text-align:right;">${formatMataUangSheet(totalBNoa)}</td>
+                            <td style="text-align:right;">${formatMataUangSheet(totalBAmount)}</td>
+                            <td style="text-align:center;">-</td>
+                            <td style="text-align:right;">${formatMataUangSheet(totalANoa)}</td>
+                            <td style="text-align:right;">${avgPctNoa.toFixed(2)}%</td>
+                            <td style="text-align:right;">${formatMataUangSheet(totalAAmount)}</td>
+                            <td style="text-align:right; color: #2563eb;">${avgPctAmount.toFixed(2)}%</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div class="footer-note">
+                    Dokumen ini dihasilkan secara otomatis oleh System Dashboard Monitoring Performance BM.
+                </div>
+
+                <script>
+                    window.onload = function() {
+                        const ctx = document.getElementById('printChartCanvas').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: ${JSON.stringify(chartLabels)},
+                                datasets: [
+                                    {
+                                        label: 'Target Budget Amount (Rp)',
+                                        data: ${JSON.stringify(chartTargetAmounts)},
+                                        borderColor: '#64748b',
+                                        borderDash: [4, 4],
+                                        borderWidth: 2,
+                                        fill: false,
+                                        pointRadius: 2
+                                    },
+                                    {
+                                        label: 'Actual Realisasi Amount (Rp)',
+                                        data: ${JSON.stringify(chartActualAmounts)},
+                                        borderColor: '#2563eb',
+                                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                                        borderWidth: 2,
+                                        fill: true,
+                                        pointRadius: 3
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: false,
+                                plugins: {
+                                    legend: { position: 'top', labels: { font: { size: 10 } } }
+                                },
+                                scales: {
+                                    x: { ticks: { font: { size: 9 } } },
+                                    y: {
+                                        ticks: {
+                                            font: { size: 9 },
+                                            callback: function(v) {
+                                                return 'Rp ' + (v >= 1e9 ? (v/1e9).toFixed(1) + 'M' : (v/1e6).toFixed(0) + 'Jt');
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        setTimeout(() => {
+                            window.print();
+                        }, 600);
+                    };
+                <\/script>
+            </body>
+            </html>
+        `;
+
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+    }
+
+    function resetToGlobalView() {
+        selectedBMName = null;
+        document.getElementById('btnResetView').style.display = 'none';
+        document.getElementById('searchBar').style.display = 'inline-block';
+        document.getElementById('regionalFilter').style.display = 'inline-block';
+        document.getElementById('areaFilter').style.display = 'inline-block';
+        document.getElementById('radarSectionCard').style.display = 'block';
+
+        if (window.innerWidth > 992) {
+            document.getElementById('dashboardMiddleSection').style.gridTemplateColumns = '2fr 1fr';
+        } else {
+            document.getElementById('dashboardMiddleSection').style.gridTemplateColumns = '1fr';
+        }
+
+        processAndRender();
+    }
+
+    function renderChart(labels, datasetData) {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        if (chartInstance) { chartInstance.destroy(); }
+
+        chartInstance = new Chart(ctx, {
             type: 'bar',
+            data: { 
+                labels: labels, 
+                datasets: [{ label: '% AMOUNT', data: datasetData, backgroundColor: '#10b981', borderRadius: 4 }] 
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { ticks: { callback: value => value + '%' } } }
+            }
+        });
+    }
+
+    function renderLineChartForSingleBM(history) {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        if (chartInstance) { chartInstance.destroy(); }
+
+        const labels = history.map(d => d.bulanLabel);
+        const targetAmounts = history.map(d => d.bAmount);
+        const actualAmounts = history.map(d => d.aAmount);
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
             data: {
-                labels: topData.map(i => `${i.nama} (${i.wilayah})`),
-                datasets: [{
-                    label: 'Actual Disburse (Rp)',
-                    data: topData.map(i => i.actual),
-                    backgroundColor: '#2563eb',
-                    borderRadius: 6
-                }]
+                labels: labels,
+                datasets: [
+                    { label: 'Target Budget Amount (Rp)', data: targetAmounts, borderColor: '#94a3b8', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.2 },
+                    { label: 'Actual Realisasi Amount (Rp)', data: actualAmounts, borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', tension: 0.2, fill: true }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: { position: 'bottom' },
                     tooltip: {
                         callbacks: {
-                            label: function(context) { return 'Disburse: ' + formatRupiah(context.raw); }
+                            label: function(context) { return context.dataset.label + ': Rp ' + formatMataUangSheet(context.raw); }
                         }
                     }
                 },
                 scales: {
                     y: {
                         ticks: {
-                            callback: function(value) { return 'Rp ' + (value / 1000000).toLocaleString('id-ID') + ' Jt'; }
+                            callback: value => 'Rp ' + (value >= 1e9 ? (value / 1e9).toFixed(1) + 'M' : (value / 1e6).toFixed(0) + 'Jt')
                         }
                     }
                 }
@@ -414,12 +1031,103 @@
         });
     }
 
-    // Event Listener Filter & Search
-    document.getElementById('searchBar').addEventListener('input', renderDashboard);
-    document.getElementById('regionFilter').addEventListener('change', renderDashboard);
+    function escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
 
-    // Jalankan pertama kali
-    loadSpreadsheetData();
+    function getStructuredExportData() {
+        let startIdx = parseInt(document.getElementById('startMonthFilter').value);
+        let endIdx = parseInt(document.getElementById('endMonthFilter').value);
+        if (startIdx > endIdx) { let t = startIdx; startIdx = endIdx; endIdx = t; }
+
+        let exportRows = [];
+        
+        if (selectedBMName) {
+            const bmData = allKaryawanHistory.find(item => item.nama === selectedBMName);
+            if (!bmData) return [];
+
+            bmData.history.slice(startIdx, endIdx + 1).forEach(m => {
+                exportRows.push({
+                    "Branch Manager": bmData.nama,
+                    "Regional": bmData.regional,
+                    "Wilayah": bmData.wilayah,
+                    "Periode": m.bulanLabel,
+                    "Target NOA": m.bNoa,
+                    "Target Amount": m.bAmount,
+                    "Jumlah AO": m.ao,
+                    "Actual NOA": m.aNoa,
+                    "% NOA": m.aPctNoaStr,
+                    "Actual Amount": m.aAmount,
+                    "% Amount": m.aPctAmountStr
+                });
+            });
+        } else {
+            const rangeText = `${BULAN_LABELS[startIdx]} s/d ${BULAN_LABELS[endIdx]}`;
+            const txt = document.getElementById('searchBar').value.toLowerCase().trim();
+            const selectedRegional = document.getElementById('regionalFilter').value;
+            const selectedArea = document.getElementById('areaFilter').value;
+
+            allKaryawanHistory.forEach(bm => {
+                const matchName = bm.nama.toLowerCase().includes(txt);
+                const matchRegional = (selectedRegional === 'ALL' || bm.regional === selectedRegional);
+                const matchArea = (selectedArea === 'ALL' || bm.wilayah === selectedArea);
+                if (!matchName || !matchRegional || !matchArea) return;
+
+                let rangeMonths = bm.history.slice(startIdx, endIdx + 1);
+                let totalBNoa = 0, totalBAmount = 0, totalANoa = 0, totalAAmount = 0;
+                let lastAo = rangeMonths[rangeMonths.length - 1].ao;
+
+                rangeMonths.forEach(m => {
+                    totalBNoa += m.bNoa; totalBAmount += m.bAmount;
+                    totalANoa += m.aNoa; totalAAmount += m.aAmount;
+                });
+
+                let pctNoa = totalBNoa > 0 ? (totalANoa / totalBNoa) * 100 : 0;
+                let pctAmount = totalBAmount > 0 ? (totalAAmount / totalBAmount) * 100 : 0;
+
+                let status = "On Track";
+                if (totalBAmount === 0) status = "No Target";
+                else if (pctAmount < 90) status = "Perlu Review";
+
+                exportRows.push({
+                    "Nama Branch Manager": bm.nama,
+                    "Regional": bm.regional,
+                    "Wilayah": bm.wilayah,
+                    "Periode": rangeText,
+                    "Target NOA": totalBNoa,
+                    "Target Amount": totalBAmount,
+                    "Jumlah AO Terakhir": lastAo,
+                    "Actual NOA": totalANoa,
+                    "% NOA": pctNoa.toFixed(2) + '%',
+                    "Actual Amount": totalAAmount,
+                    "% Amount": pctAmount.toFixed(2) + '%',
+                    "Status Performance": status
+                });
+            });
+        }
+        return exportRows;
+    }
+
+    function exportDataToExcel() {
+        const data = getStructuredExportData();
+        if (data.length === 0) return alert('Tidak ada data!');
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Performance_BM");
+        XLSX.writeFile(workbook, `Performance_BM_MultiRegional.xlsx`);
+    }
+
+    // Event Listeners Filter Dynamic
+    document.getElementById('regionalFilter').addEventListener('change', () => {
+        updateAreaDropdown();
+        processAndRender();
+    });
+    document.getElementById('areaFilter').addEventListener('change', processAndRender);
+    document.getElementById('startMonthFilter').addEventListener('change', processAndRender);
+    document.getElementById('endMonthFilter').addEventListener('change', processAndRender);
+    document.getElementById('searchBar').addEventListener('input', processAndRender);
+
+    initFetch();
 </script>
 </body>
 </html>
