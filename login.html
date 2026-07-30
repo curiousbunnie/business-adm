@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration Center — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy: #14213d;
+    --navy-deep: #0d1830;
+    --slate: #3b5a82;
+    --gray-mute: #6b7785;
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --gold: #b08d57;
+    --gold-soft: #d9c6a3;
+    --border: #dfe3e8;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family:'IBM Plex Sans', sans-serif;
+    background:var(--bg);
+    color:var(--navy);
+    min-height:100vh;
+    display:flex;
+  }
+  .panel-left{
+    flex:1.1;
+    background:
+      linear-gradient(180deg, rgba(13,24,48,0.92), rgba(20,33,61,0.96)),
+      var(--navy-deep);
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:56px 64px;
+    color:#eef1f6;
+  }
+  /* ledger / register grid signature */
+  .ledger-grid{
+    position:absolute;
+    inset:0;
+    background-image:
+      repeating-linear-gradient(to bottom, rgba(217,198,163,0.07) 0px, rgba(217,198,163,0.07) 1px, transparent 1px, transparent 64px),
+      repeating-linear-gradient(to right, rgba(217,198,163,0.05) 0px, rgba(217,198,163,0.05) 1px, transparent 1px, transparent 96px);
+    pointer-events:none;
+  }
+  .ledger-index{
+    position:absolute;
+    left:64px;
+    top:56px;
+    bottom:56px;
+    width:1px;
+    background:rgba(217,198,163,0.18);
+  }
+  .brand-mark{
+    position:relative;
+    z-index:2;
+  }
+  .brand-mark .eyebrow{
+    font-size:12px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--gold-soft);
+    margin-bottom:18px;
+    font-weight:500;
+  }
+  .brand-mark h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:40px;
+    line-height:1.15;
+    max-width:420px;
+  }
+  .brand-mark .rule{
+    width:56px;
+    height:2px;
+    background:var(--gold);
+    margin:22px 0 22px;
+  }
+  .brand-mark p{
+    max-width:380px;
+    color:#c4cbd8;
+    font-size:14.5px;
+    line-height:1.7;
+  }
+  .ledger-entries{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .ledger-entries .entry{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    font-size:13px;
+    color:#a9b3c4;
+    border-top:1px solid rgba(217,198,163,0.14);
+    padding-top:14px;
+  }
+  .ledger-entries .entry .num{
+    font-family:'Source Serif 4', serif;
+    color:var(--gold-soft);
+    font-size:13px;
+    width:28px;
+  }
+  .panel-right{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:40px;
+    background:var(--bg);
+  }
+  .form-card{
+    width:100%;
+    max-width:400px;
+  }
+  .form-card .kicker{
+    font-size:12px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--gray-mute);
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  .form-card h2{
+    font-family:'Source Serif 4', serif;
+    font-size:28px;
+    font-weight:600;
+    color:var(--navy);
+    margin-bottom:8px;
+  }
+  .form-card .sub{
+    color:var(--gray-mute);
+    font-size:14px;
+    margin-bottom:32px;
+  }
+  .field{
+    margin-bottom:20px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--navy);
+    margin-bottom:7px;
+  }
+  .field input{
+    width:100%;
+    padding:12px 14px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    background:#fff;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:14.5px;
+    color:var(--navy);
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .field input::placeholder{ color:#a7afba; }
+  .field input:focus{
+    outline:none;
+    border-color:var(--slate);
+    box-shadow:0 0 0 3px rgba(59,90,130,0.15);
+  }
+  .row-between{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:26px;
+    font-size:13.5px;
+  }
+  .remember{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--gray-mute);
+  }
+  .remember input{ accent-color:var(--navy); width:15px; height:15px; }
+  .row-between a{
+    color:var(--slate);
+    text-decoration:none;
+    font-weight:500;
+  }
+  .row-between a:hover{ text-decoration:underline; }
+  button.submit{
+    width:100%;
+    padding:13px;
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:14.5px;
+    font-weight:600;
+    letter-spacing:0.01em;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  button.submit:hover{ background:var(--navy-deep); }
+  button.submit:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:2px;
+  }
+  .divider-line{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    margin:28px 0;
+    color:#a7afba;
+    font-size:12px;
+  }
+  .divider-line::before, .divider-line::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--border);
+  }
+  .foot-note{
+    text-align:center;
+    font-size:13px;
+    color:var(--gray-mute);
+  }
+  .foot-note a{ color:var(--slate); font-weight:600; text-decoration:none; }
+  .error-msg{
+    display:none;
+    background:#fdf1ee;
+    border:1px solid #e8b9ad;
+    color:#9c3a26;
+    font-size:13px;
+    padding:10px 12px;
+    border-radius:4px;
+    margin-bottom:18px;
+  }
+  @media (max-width: 880px){
+    body{ flex-direction:column; }
+    .panel-left{ padding:40px 32px; min-height:220px; }
+    .brand-mark h1{ font-size:28px; }
+    .ledger-entries{ display:none; }
+    .panel-right{ padding:32px 24px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="panel-left">
+    <div class="ledger-grid" aria-hidden="true"></div>
+    <div class="ledger-index" aria-hidden="true"></div>
+
+    <div class="brand-mark">
+      <div class="eyebrow">Internal System</div>
+      <h1>Administration Center</h1>
+      <div class="rule"></div>
+      <p>Akses terpusat untuk manajemen operasional, data, dan hak akses tim. Masuk dengan kredensial resmi Anda untuk melanjutkan.</p>
+    </div>
+
+    <div class="ledger-entries" aria-hidden="true">
+      <div class="entry"><span class="num">01</span><span>Manajemen Pengguna &amp; Hak Akses</span></div>
+      <div class="entry"><span class="num">02</span><span>Ringkasan Operasional Real-time</span></div>
+      <div class="entry"><span class="num">03</span><span>Log Aktivitas &amp; Audit</span></div>
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <div class="form-card">
+      <div class="kicker">Sign In</div>
+      <h2>Selamat datang kembali</h2>
+      <p class="sub">Masukkan kredensial Anda untuk mengakses dashboard.</p>
+
+      <div class="error-msg" id="errorMsg">Email atau kata sandi tidak sesuai. Coba lagi.</div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="nama@perusahaan.com" required>
+        </div>
+        <div class="field">
+          <label for="password">Kata Sandi</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" required>
+        </div>
+
+        <div class="row-between">
+          <label class="remember">
+            <input type="checkbox" id="remember" name="remember">
+            Ingat saya
+          </label>
+          <a href="#">Lupa kata sandi?</a>
+        </div>
+
+        <button type="submit" class="submit">Masuk</button>
+      </form>
+
+      <div class="divider-line">akses terbatas</div>
+      <p class="foot-note">Butuh akses? Hubungi <a href="#">administrator sistem</a>.</p>
+    </div>
+  </div>
+
+  <script>
+    // Placeholder submit handler — ganti dengan logic auth (mis. Firebase Auth) nanti.
+    document.getElementById('loginForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      // contoh: tampilkan error kalau field kosong
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const errorBox = document.getElementById('errorMsg');
+      if(!email || !password){
+        errorBox.style.display = 'block';
+        errorBox.textContent = 'Email dan kata sandi wajib diisi.';
+        return;
+      }
+      errorBox.style.display = 'none';
+      // TODO: sambungkan ke sistem autentikasi
+      alert('Form siap — tinggal disambungkan ke sistem login (Firebase Auth, dsb).');
+    });
+  </script>
+
+</body>
+</html>
