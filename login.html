@@ -305,7 +305,7 @@
       </form>
 
       <div class="divider-line">akses terbatas</div>
-      <p class="foot-note" id="toggleModeNote">Belum punya akun? <a href="#" id="toggleMode">Daftar akun baru</a></p>
+      <p class="foot-note" id="toggleModeNote">Belum punya akun? <a href="#" data-toggle-link>Daftar akun baru</a></p>
     </div>
   </div>
 
@@ -337,7 +337,6 @@
     const submitBtn = document.getElementById('submitBtn');
     const nameField = document.getElementById('nameField');
     const rememberRow = document.getElementById('rememberRow');
-    const toggleMode = document.getElementById('toggleMode');
     const toggleModeNote = document.getElementById('toggleModeNote');
 
     function showError(msg){
