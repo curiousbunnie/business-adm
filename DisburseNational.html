@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Performance Branch Manager — Disburse</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --danger-text: #b91c1c;
+            --border: #e2e8f0;
+            --bg-light: #f8fafc;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            margin: 0;
+            padding: 24px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .header-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            padding: 20px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header-panel h1 { margin: 0; font-size: 20px; font-weight: 700; color: var(--primary); }
+        .header-panel p { margin: 4px 0 0 0; color: #64748b; font-size: 13px; }
+        
+        .filter-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .month-select, .region-select, .search-input {
+            padding: 10px 16px;
+            font-size: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            outline: none;
+            background: #ffffff;
+            box-sizing: border-box;
+        }
+        .search-input { width: 220px; }
+        .region-select { min-width: 160px; }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .kpi-title { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.5px; }
+        .kpi-value { font-size: 22px; font-weight: 700; margin: 6px 0; color: var(--primary); white-space: nowrap; }
+
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 992px) {
+            .dashboard-content { grid-template-columns: 1fr; }
+        }
+        .section-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .section-card h3 { margin: 0 0 20px 0; font-size: 15px; font-weight: 700; color: var(--primary); }
+
+        .compliance-list {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .compliance-item {
+            background: #f8fafc;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            border-radius: 0 8px 8px 0;
+            font-size: 12.5px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--danger);
+        }
+        .compliance-item .name { font-weight: 700; color: var(--primary); }
+        .compliance-item .sp-status { color: var(--danger-text); font-weight: 700; margin-top: 4px; font-size: 12px; }
+
+        .table-wrapper { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+        .table-data { width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left; white-space: nowrap; }
+        
+        .table-data th { padding: 8px 6px; border: 1px solid var(--border); text-align: center; font-weight: 600; }
+        .table-data thead tr.main-header th { background: #f1f5f9; color: var(--primary); font-size: 11px; text-transform: uppercase; font-weight: 700; }
+        .table-data thead tr.sub-header th { background: #f8fafc; color: #475569; font-size: 10.5px; }
+        
+        .table-data td { padding: 8px 10px; border: 1px solid var(--border); text-align: left; }
+        .num-cell { text-align: right !important; }
+        .center-cell { text-align: center !important; }
+        
+        .badge-sp {
+            background-color: var(--danger-bg);
+            color: var(--danger-text);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            font-size: 11px;
+            display: inline-block;
+        }
+        .badge-normal {
+            background-color: #e2e8f0;
+            color: #475569;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .badge-ignore {
+            background-color: #f1f5f9;
+            color: #94a3b8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-style: italic;
+        }
+
+        .table-data tr.row-total td { background: var(--bg-light); font-weight: 700; color: var(--primary); border-top: 2px solid #cbd5e1; }
+        .table-data tr:hover td { background-color: #fafafa; }
+        
+        .loading { padding: 60px 20px; text-align: center; font-weight: 600; color: var(--accent); font-size: 15px; }
+
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .header-panel { padding: 16px; flex-direction: column; align-items: flex-start; }
+            .filter-group { flex-direction: column; width: 100%; }
+            .search-input, .region-select, .month-select { width: 100% !important; min-width: unset; }
+            .kpi-grid { grid-template-columns: 1fr; gap: 12px; }
+            .kpi-card { padding: 16px; }
+            .kpi-value { font-size: 18px; }
+            .section-card { padding: 16px; }
+            .table-data { font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <div class="header-panel">
+        <div>
+            <h1>Dashboard Monitoring Performance BM</h1>
+            <p>Menampilkan Top 10 BM berdasarkan pencapaian % AMOUNT tertinggi pada grafik.</p>
+        </div>
+        <div class="filter-group">
+            <input type="text" id="searchBar" class="search-input" placeholder="Cari Nama Branch Manager">
+            
+            <select class="region-select" id="regionFilter">
+                <option value="ALL">Semua Wilayah</option>
+            </select>
+
+            <select class="month-select" id="monthFilter">
+                <option value="JAN_2025" selected>Januari 2025</option>
+                <option value="FEB_2025">Februari 2025</option>
+                <option value="MAR_2025">Maret 2025</option>
+                <option value="APR_2025">April 2025</option>
+                <option value="MAY_2025">Mei 2025</option>
+                <option value="JUN_2025">Juni 2025</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="loadingText" class="loading">Memuat data Disburse dari Firebase Firestore...</div>
+
+    <div id="dashboardContentWrapper" style="display: none;">
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-title">Grand Total Budget AMOUNT</div>
+                <div class="kpi-value" id="kpiTargetTotal">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Grand Total Actual AMOUNT</div>
+                <div class="kpi-value" id="kpiAcvTotal">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Rata - rata % AMOUNT</div>
+                <div class="kpi-value" id="kpiPctTotal" style="color: var(--accent);">-</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">BM Perlu Review (&lt; 90%)</div>
+                <div class="kpi-value" id="kpiCountSp" style="color: var(--danger);">-</div>
+            </div>
+        </div>
+
+        <div class="dashboard-content">
+            <div class="section-card">
+                <h3 id="chartTitle">Visualisasi Capaian % AMOUNT BM (Top 10)</h3>
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="section-card">
+                <h3>⚠️ Radar Perhatian Target Anggaran ( &lt; 90%)</h3>
+                <div class="compliance-list" id="spListWrapper"></div>
+            </div>
+        </div>
+
+        <div class="section-card">
+            <h3 id="tableTitle">Rekapitulasi Pencapaian Target Bulanan</h3>
+            <div class="table-wrapper">
+                <table class="table-data">
+                    <thead id="tableHeadContainer"></thead>
+                    <tbody id="tableBody"></tbody>
+                    <tfoot id="tableFoot"></tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+    // Config Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
+      authDomain: "business-admin-center.firebaseapp.com",
+      projectId: "business-admin-center",
+      storageBucket: "business-admin-center.firebasestorage.app",
+      messagingSenderId: "165059982705",
+      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
+      measurementId: "G-TSW82QKX0P"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let rawFirestoreDocs = [];
+    let processedKaryawan = [];
+    let chartInstance = null;
+
+    // Utility Parsers
+    function parseNum(val) {
+        if (val === undefined || val === null || val === "") return 0;
+        if (typeof val === 'number') return val;
+        let str = val.toString().trim().replace(/Rp\s?/g, '');
+        if (str.includes('.') && str.includes(',')) {
+            str = str.replace(/\./g, '').replace(/,/g, '.');
+        } else if (str.includes(',')) {
+            str = str.replace(/,/g, '.');
+        } else if (str.includes('.')) {
+            let parts = str.split('.');
+            if (parts[parts.length - 1].length === 3 || parts.length > 2) {
+                str = str.replace(/\./g, '');
+            }
+        }
+        return parseFloat(str) || 0;
+    }
+
+    function parsePercent(val) {
+        if (val === undefined || val === null || val === "") return { num: 0, text: '0.00%' };
+        let str = val.toString().trim();
+        let num = parseFloat(str.replace(/%/g, '').replace(/,/g, '.')) || 0;
+        if (typeof val === 'number' && val <= 1.0) {
+            num = val * 100;
+        }
+        return { num: num, text: num.toFixed(2) + '%' };
+    }
+
+    function formatMataUang(number) {
+        return parseFloat(number).toLocaleString('id-ID', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2 
+        });
+    }
+
+    // Inisialisasi Ambil Data dari Firestore
+    async function initFirestoreFetch() {
+        document.getElementById('loadingText').style.display = 'block';
+        document.getElementById('dashboardContentWrapper').style.display = 'none';
+
+        try {
+            const snapshot = await db.collection('DisburseNational').get();
+            rawFirestoreDocs = [];
+            snapshot.forEach(doc => {
+                rawFirestoreDocs.push(doc.data());
+            });
+
+            document.getElementById('loadingText').style.display = 'none';
+            document.getElementById('dashboardContentWrapper').style.display = 'block';
+            
+            processAndRender();
+        } catch (err) {
+            document.getElementById('loadingText').innerHTML = `Gagal memuat data dari Firebase Firestore: ${err.message}`;
+            console.error(err);
+        }
+    }
+
+    // Pemrosesan Data Firestore
+    function processAndRender() {
+        if (rawFirestoreDocs.length === 0) return;
+
+        const monthSelect = document.getElementById('monthFilter');
+        const selectedMonthKey = monthSelect.value; // Contoh: JAN_2025
+        const selectedMonthText = monthSelect.options[monthSelect.selectedIndex].text;
+
+        processedKaryawan = rawFirestoreDocs.map(doc => {
+            let namaBM = (doc['NAMA BM'] || doc['NAMA_BM'] || "").toString().trim();
+            if (!namaBM || namaBM.toLowerCase() === 'total') return null;
+
+            let regionVal = (doc['WILAYAH EXISTING'] || doc['WILAYAH'] || doc['AREA'] || 'Tanpa Wilayah').toString().trim();
+            
+            // Mencari field dinamis berdasarkan prefix bulan
+            let bNoa = parseNum(doc[`${selectedMonthKey}_BUDGET_NOA`] || doc[` ${selectedMonthKey.replace('_', ' ')} BUDGET NOA`] || doc['NOA_BUDGET'] || 0);
+            let bAmount = parseNum(doc[`${selectedMonthKey}_BUDGET_AMOUNT`] || doc[` ${selectedMonthKey.replace('_', ' ')} BUDGET`] || doc['JAN_2025_BUDGET_AMOUNT'] || 0);
+            let jumlahAO = doc['AO'] || doc['JUMLAH_AO'] || doc['Jumlah AO'] || '-';
+            
+            let aNoa = parseNum(doc[`${selectedMonthKey}_ACTUAL_NOA`] || doc[` ${selectedMonthKey.replace('_', ' ')} ACTUAL NOA`] || doc['NOA_ACTUAL'] || 0);
+            let aPctNoa = parsePercent(doc[`${selectedMonthKey}_PCT_NOA`] || doc['% NOA'] || 0);
+            let aAmount = parseNum(doc[`${selectedMonthKey}_ACTUAL_AMOUNT`] || doc[` ${selectedMonthKey.replace('_', ' ')} ACTUAL`] || doc['JAN_2025_ACTUAL_AMOUNT'] || 0);
+            let aPctAmount = parsePercent(doc[`${selectedMonthKey}_PCT_AMOUNT`] || doc['Unnamed: 14'] || doc['% AMOUNT'] || 0);
+
+            // Hitung otomatis % Amount jika di Firestore belum ada
+            if (aPctAmount.num === 0 && bAmount > 0) {
+                let calcPct = (aAmount / bAmount) * 100;
+                aPctAmount = { num: calcPct, text: calcPct.toFixed(2) + '%' };
+            }
+
+            return {
+                nama: namaBM,
+                wilayah: regionVal,
+                bNoa: bNoa,
+                bAmount: bAmount,
+                ao: jumlahAO,
+                aNoa: aNoa,
+                aPctNoaStr: aPctNoa.text,
+                aAmount: aAmount,
+                aPctAmountNum: aPctAmount.num,
+                aPctAmountStr: aPctAmount.text
+            };
+        }).filter(item => item !== null);
+
+        // Update Filter Wilayah
+        const regionSelect = document.getElementById('regionFilter');
+        const currentSelectedRegion = regionSelect.value;
+        let wilayahSet = new Set();
+        processedKaryawan.forEach(item => { if(item.wilayah) wilayahSet.add(item.wilayah); });
+        
+        let optionsHtml = '<option value="ALL">Semua Wilayah</option>';
+        Array.from(wilayahSet).sort().forEach(wil => {
+            optionsHtml += `<option value="${wil}">${wil}</option>`;
+        });
+        regionSelect.innerHTML = optionsHtml;
+        if(Array.from(wilayahSet).includes(currentSelectedRegion)) regionSelect.value = currentSelectedRegion;
+
+        applyFiltersAndRender(selectedMonthText);
+    }
+
+    function applyFiltersAndRender(monthLabel) {
+        const txt = document.getElementById('searchBar').value.toLowerCase().trim();
+        const selectedRegion = document.getElementById('regionFilter').value;
+        
+        const filtered = processedKaryawan.filter(item => {
+            const matchName = item.nama.toLowerCase().includes(txt);
+            const matchRegion = (selectedRegion === 'ALL' || item.wilayah === selectedRegion);
+            return matchName && matchRegion;
+        });
+
+        document.getElementById('tableTitle').innerText = `Matriks Rekapitulasi Target vs Realisasi - ${monthLabel}`;
+        document.getElementById('chartTitle').innerText = `Visualisasi Capaian % AMOUNT BM (Top 10 Tertinggi) - ${monthLabel}`;
+
+        let totalBNoa = 0, totalBAmount = 0, totalANoa = 0, totalAAmount = 0, countSp = 0;
+        let tableHtml = '';
+        let spListHtml = '';
+        let minAch = 90.0; 
+
+        let headHtml = `
+            <tr class="main-header">
+                <th rowspan="2" style="width: 40px;">No</th>
+                <th rowspan="2">Nama Branch Manager</th>
+                <th rowspan="2">Wilayah</th>
+                <th colspan="2">BUDGET (${monthLabel})</th>
+                <th rowspan="2" style="background: #eff6ff;">Jumlah AO</th>
+                <th colspan="4">ACTUAL (${monthLabel})</th>
+                <th rowspan="2" style="width: 100px;">Status</th>
+            </tr>
+            <tr class="sub-header">
+                <th>NOA</th>
+                <th>AMOUNT</th>
+                <th>NOA</th>
+                <th>% NOA</th>
+                <th>AMOUNT</th>
+                <th>% AMOUNT</th>
+            </tr>
+        `;
+        document.getElementById('tableHeadContainer').innerHTML = headHtml;
+
+        filtered.forEach((item, index) => {
+            totalBNoa += item.bNoa;
+            totalBAmount += item.bAmount;
+            totalANoa += item.aNoa;
+            totalAAmount += item.aAmount;
+
+            let isNoTarget = (item.bAmount === 0);
+            let isLowPerformance = !isNoTarget && (item.aPctAmountNum < minAch);
+            let styleAchAmount = isLowPerformance ? "font-weight:700; color:var(--danger);" : (isNoTarget ? "color:#94a3b8;" : "font-weight:600; color:var(--success);");
+
+            let statusBadge = `<span class="badge-normal">On Track</span>`;
+            if (isNoTarget) {
+                statusBadge = `<span class="badge-ignore">No Target</span>`;
+            } else if (isLowPerformance) {
+                countSp++;
+                statusBadge = `<span class="badge-sp">Perlu Review</span>`;
+                spListHtml += `
+                    <div class="compliance-item">
+                        <div class="name">${item.nama} (${item.wilayah})</div>
+                        <div class="sp-status">⚠️ Pencapaian wilayah di bawah 90%</div>
+                        <div style="font-size: 11px; color: #7f1d1d; margin-top: 2px;">Capaian Aktual: ${item.aPctAmountStr} (Batas minimal ${minAch}%)</div>
+                    </div>
+                `;
+            }
+
+            tableHtml += `
+                <tr>
+                    <td class="center-cell" style="color: #64748b;">${index + 1}</td>
+                    <td style="font-weight:600; color:var(--primary);">${item.nama}</td>
+                    <td><strong>${item.wilayah}</strong></td>
+                    <td class="num-cell">${formatMataUang(item.bNoa)}</td>
+                    <td class="num-cell">${formatMataUang(item.bAmount)}</td>
+                    <td class="center-cell" style="background: #f8fafc; font-weight: 600; color: var(--accent);">${item.ao}</td>
+                    <td class="num-cell">${formatMataUang(item.aNoa)}</td>
+                    <td class="num-cell" style="font-weight:500;">${isNoTarget ? '0.00%' : item.aPctNoaStr}</td>
+                    <td class="num-cell">${formatMataUang(item.aAmount)}</td>
+                    <td class="num-cell" style="${styleAchAmount}">${isNoTarget ? '0.00%' : item.aPctAmountStr}</td>
+                    <td class="center-cell">${statusBadge}</td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('tableBody').innerHTML = tableHtml || `<tr><td colspan="11" style="text-align:center; padding:30px;">Data tidak ditemukan.</td></tr>`;
+        document.getElementById('spListWrapper').innerHTML = spListHtml || '<div style="color:#64748b; font-size:13px; text-align:center; padding:25px;">✅ Seluruh Branch Manager berada di zona aman (&ge; 90%).</div>';
+
+        let avgPctNoa = totalBNoa > 0 ? (totalANoa / totalBNoa) * 100 : 0;
+        let avgPctAmount = totalBAmount > 0 ? (totalAAmount / totalBAmount) * 100 : 0;
+
+        let footHtml = `
+            <tr class="row-total">
+                <td colspan="3" class="center-cell">TOTAL KESELURUHAN</td>
+                <td class="num-cell">${formatMataUang(totalBNoa)}</td>
+                <td class="num-cell">${formatMataUang(totalBAmount)}</td>
+                <td class="center-cell" style="background: #e2e8f0;">-</td>
+                <td class="num-cell">${formatMataUang(totalANoa)}</td>
+                <td class="num-cell">${avgPctNoa.toFixed(2)}%</td>
+                <td class="num-cell">${formatMataUang(totalAAmount)}</td>
+                <td class="num-cell" style="color: var(--accent);">${avgPctAmount.toFixed(2)}%</td>
+                <td></td>
+            </tr>
+        `;
+        document.getElementById('tableFoot').innerHTML = footHtml;
+
+        document.getElementById('kpiTargetTotal').innerText = "Rp " + formatMataUang(totalBAmount);
+        document.getElementById('kpiAcvTotal').innerText = "Rp " + formatMataUang(totalAAmount);
+        document.getElementById('kpiPctTotal').innerText = avgPctAmount.toFixed(2) + '%';
+        document.getElementById('kpiCountSp').innerText = `${countSp} Branch Manager`;
+
+        const sortedDataForChart = [...filtered].sort((a, b) => b.aPctAmountNum - a.aPctAmountNum);
+        
+        const top10Labels = sortedDataForChart.slice(0, 10).map(item => `${item.nama} (${item.wilayah})`);
+        const top10Values = sortedDataForChart.slice(0, 10).map(item => item.aPctAmountNum);
+
+        renderChart(top10Labels, top10Values);
+    }
+
+    function renderChart(labels, datasetData) {
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        if (chartInstance) { chartInstance.destroy(); }
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: { 
+                labels: labels, 
+                datasets: [{
+                    label: '% AMOUNT (Top 10)', 
+                    data: datasetData, 
+                    backgroundColor: '#10b981', 
+                    borderRadius: 4 
+                }] 
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { ticks: { callback: value => value + '%' } } }
+            }
+        });
+    }
+
+    document.getElementById('monthFilter').addEventListener('change', processAndRender);
+    document.getElementById('regionFilter').addEventListener('change', () => {
+        const monthSelect = document.getElementById('monthFilter');
+        applyFiltersAndRender(monthSelect.options[monthSelect.selectedIndex].text);
+    });
+    document.getElementById('searchBar').addEventListener('input', () => {
+        const monthSelect = document.getElementById('monthFilter');
+        applyFiltersAndRender(monthSelect.options[monthSelect.selectedIndex].text);
+    });
+
+    // Panggil Firestore saat halaman terbuka
+    initFirestoreFetch();
+</script>
+</body>
+</html>
