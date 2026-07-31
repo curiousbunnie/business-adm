@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration Center — Upload Data Disburse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#14213d; --slate:#3b5a82; --gray-mute:#6b7785;
+    --bg:#f5f7fa; --card:#fff; --gold:#b08d57; --border:#e4e8ee;
+    --green:#1f8a5f; --red:#c9433a;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'IBM Plex Sans', sans-serif; background:var(--bg); color:var(--navy); min-height:100vh; }
+  .topbar{ background:#fff; border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; }
+  .topbar .eyebrow{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); font-weight:600; }
+  .topbar h1{ font-family:'Source Serif 4', serif; font-size:18px; font-weight:600; }
+  .back-link{ font-size:13px; color:var(--slate); text-decoration:none; font-weight:500; }
+  .wrap{ max-width:780px; margin:0 auto; padding:40px 24px; }
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:10px; padding:28px; margin-bottom:20px; }
+  .card h2{ font-family:'Source Serif 4', serif; font-size:20px; margin-bottom:8px; }
+  .card p.desc{ font-size:13.5px; color:var(--gray-mute); line-height:1.6; margin-bottom:20px; }
+  .privacy-note{ background:#eef2f7; border:1px solid #d7e0ea; border-radius:6px; padding:12px 14px; font-size:13px; color:var(--slate); margin-bottom:20px; line-height:1.6; }
+  .warn-note{ background:#fbf3e2; border:1px solid #eed9ad; border-radius:6px; padding:12px 14px; font-size:12.5px; color:#8a6a1f; margin-bottom:20px; line-height:1.6; }
+  .drop-zone{ border:2px dashed var(--border); border-radius:8px; padding:36px 20px; text-align:center; cursor:pointer; transition:.15s ease; }
+  .drop-zone.drag{ border-color:var(--slate); background:#f2f6fb; }
+  .drop-zone .icon{ font-size:28px; margin-bottom:10px; }
+  .drop-zone p{ font-size:13.5px; color:var(--gray-mute); }
+  .drop-zone input{ display:none; }
+  .file-name{ margin-top:14px; font-size:13.5px; color:var(--navy); font-weight:500; display:none; }
+  .preview-count{ margin-top:14px; font-size:13.5px; color:var(--navy); display:none; line-height:1.8; }
+  .btn{ padding:11px 20px; border-radius:6px; border:none; font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; margin-top:20px; }
+  .btn-primary{ background:var(--navy); color:#fff; }
+  .btn-primary:hover{ background:#0d1830; }
+  .btn-primary:disabled{ background:#aab3c2; cursor:not-allowed; }
+  .status-msg{ margin-top:14px; font-size:13.5px; padding:10px 12px; border-radius:6px; display:none; }
+  .status-msg.ok{ background:#eaf6f0; color:var(--green); display:block; }
+  .status-msg.err{ background:#fdf1ee; color:var(--red); display:block; }
+  .progress-bar{ height:6px; background:var(--border); border-radius:3px; margin-top:14px; overflow:hidden; display:none; }
+  .progress-bar > div{ height:100%; background:var(--slate); width:0%; transition:width .2s ease; }
+  .denied{ text-align:center; padding:80px 20px; }
+  .denied h2{ font-family:'Source Serif 4', serif; font-size:22px; margin-bottom:10px; }
+  .denied p{ color:var(--gray-mute); font-size:14px; }
+  select.sheet-select{ width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:6px; font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; margin-bottom:18px; display:none; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Administration Center</div>
+      <h1>Upload Data Disburse</h1>
+    </div>
+    <a class="back-link" href="disburse-national.html">← Kembali ke Disburse National</a>
+  </div>
+
+  <div id="loadingCheck" class="wrap"><p style="color:var(--gray-mute); font-size:14px;">Memeriksa akses...</p></div>
+  <div id="denied" class="denied" style="display:none;">
+    <h2>Akses Ditolak</h2>
+    <p>Halaman ini hanya untuk administrator.</p>
+  </div>
+
+  <div id="gate" class="wrap" style="display:none;">
+    <div class="card">
+      <h2>Unggah Data Disburse</h2>
+      <p class="desc">Unggah file Excel disburse apa adanya — <strong>tidak perlu diubah dulu</strong>. Sistem otomatis mendeteksi kolom "BUDGET" dan "ACTUAL" tiap bulan berdasarkan header, termasuk yang formatnya merge cell.</p>
+
+      <div class="privacy-note">
+        ℹ️ Sistem menyimpan 2 level data: total nasional per bulan (buat grafik di Home), dan rincian per Regional &amp; Wilayah (buat halaman Disburse National).
+      </div>
+      <div class="warn-note">
+        ⚠️ Kolom bulan terdeteksi otomatis dari tulisan header. Setelah upload, cek angka 1-2 bulan terakhir di halaman Disburse National — kalau ada label bulan yang aneh/kepotong di file sumbernya, angkanya bisa ketuker.
+      </div>
+
+      <select class="sheet-select" id="sheetSelect"></select>
+
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">📄</div>
+        <p><strong>Klik untuk pilih file</strong> atau drag &amp; drop ke sini<br>Mendukung .xlsx, .xls</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+      </div>
+      <div class="file-name" id="fileName"></div>
+      <div class="preview-count" id="previewCount"></div>
+
+      <button class="btn btn-primary" id="uploadBtn" disabled>Simpan ke Database</button>
+      <div class="progress-bar" id="progressBar"><div id="progressFill"></div></div>
+      <div class="status-msg" id="statusMsg"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
+      authDomain: "business-admin-center.firebaseapp.com",
+      projectId: "business-admin-center",
+      storageBucket: "business-admin-center.firebasestorage.app",
+      messagingSenderId: "165059982705",
+      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
+      measurementId: "G-TSW82QKX0P"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let workbook = null;
+    let parsedRecords = [];
+
+    auth.onAuthStateChanged(async function(user){
+      const loadingEl = document.getElementById('loadingCheck');
+      if(!user){ window.location.href = 'login.html'; return; }
+      try{
+        const doc = await db.collection('users').doc(user.uid).get();
+        const role = doc.exists ? doc.data().role : null;
+        loadingEl.style.display = 'none';
+        if(role === 'administrator' || role === 'admin'){
+          document.getElementById('gate').style.display = 'block';
+        } else {
+          document.getElementById('denied').style.display = 'block';
+        }
+      }catch(e){
+        loadingEl.style.display = 'none';
+        document.getElementById('denied').style.display = 'block';
+      }
+    });
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault(); dropZone.classList.remove('drag');
+      if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', e => { if(e.target.files.length) handleFile(e.target.files[0]); });
+
+    function handleFile(file){
+      document.getElementById('fileName').style.display = 'block';
+      document.getElementById('fileName').textContent = '📎 ' + file.name;
+
+      const reader = new FileReader();
+      reader.onload = function(e){
+        const data = new Uint8Array(e.target.result);
+        workbook = XLSX.read(data, { type: 'array', cellDates: false });
+
+        const sheetSelect = document.getElementById('sheetSelect');
+        sheetSelect.innerHTML = '';
+        workbook.SheetNames.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = name;
+          sheetSelect.appendChild(opt);
+        });
+        sheetSelect.style.display = workbook.SheetNames.length > 1 ? 'block' : 'none';
+
+        // Coba tebak sheet yang paling relevan (ada kata "disburse" atau "BM")
+        const guess = workbook.SheetNames.find(n => /disburse|bm/i.test(n));
+        if(guess) sheetSelect.value = guess;
+
+        processSheet();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    document.getElementById('sheetSelect').addEventListener('change', processSheet);
+
+    function toNumber(val){
+      if(typeof val === 'number') return val;
+      if(!val) return 0;
+      const n = parseFloat(String(val).replace(/[^0-9.-]/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+
+    function processSheet(){
+      const sheetSelect = document.getElementById('sheetSelect');
+      const sheetName = sheetSelect.value || workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      if(!sheet) return;
+
+      const merges = sheet['!merges'] || [];
+      const aoa = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+
+      // Isi ulang cell yang kosong akibat merge di baris header (baris index 0)
+      merges.forEach(m => {
+        if(m.s.r === 0 && m.e.r === 0){
+          const val = aoa[0][m.s.c];
+          for(let c = m.s.c; c <= m.e.c; c++) aoa[0][c] = val;
+        }
+      });
+
+      const row1 = aoa[0] || [];
+      const row2 = aoa[1] || [];
+
+      // Deteksi kolom "AMOUNT" tiap bulan (budget & actual)
+      const monthCols = [];
+      for(let c = 0; c < row1.length; c++){
+        const label1 = String(row1[c] || '').trim().toUpperCase();
+        const label2 = String(row2[c] || '').trim().toUpperCase();
+        if(label2 === 'AMOUNT' && label1){
+          if(label1.includes('BUDGET')){
+            monthCols.push({ col: c, bulan: label1.replace('BUDGET','').trim(), type: 'budget' });
+          } else if(label1.includes('ACTUAL')){
+            monthCols.push({ col: c, bulan: label1.replace('ACTUAL','').trim(), type: 'actual' });
+          }
+        }
+      }
+
+      const SKIP_LABELS = ['TOTAL', 'ABM'];
+      const SKIP_WILAYAH = ['RESTRUK', 'MOMI (KOPERASI)', 'MOMI'];
+
+      const records = [];
+      let lastRegional = '';
+      for(let r = 2; r < aoa.length; r++){
+        const row = aoa[r];
+        if(!row) continue;
+        const noVal = String(row[0] || '').trim().toUpperCase();
+        if(SKIP_LABELS.includes(noVal)) continue;
+
+        const wilayah = String(row[4] || '').trim();
+        if(!wilayah || SKIP_WILAYAH.includes(wilayah.toUpperCase())) continue;
+
+        let regional = String(row[1] || '').trim();
+        if(regional && regional !== '0') lastRegional = regional;
+        else regional = lastRegional;
+        if(!regional) continue;
+
+        const monthMap = {};
+        monthCols.forEach(mc => {
+          const val = toNumber(row[mc.col]);
+          if(!monthMap[mc.bulan]) monthMap[mc.bulan] = { budget: 0, actual: 0 };
+          monthMap[mc.bulan][mc.type] = val;
+        });
+
+        Object.keys(monthMap).forEach(bulan => {
+          if(!bulan) return;
+          records.push({
+            bulan,
+            regional,
+            wilayah,
+            budget: monthMap[bulan].budget,
+            actual: monthMap[bulan].actual
+          });
+        });
+      }
+
+      parsedRecords = records;
+      const monthSet = [...new Set(records.map(r => r.bulan))];
+      const wilayahCount = new Set(records.map(r => r.wilayah)).size;
+
+      document.getElementById('previewCount').style.display = 'block';
+      document.getElementById('previewCount').innerHTML =
+        `Terdeteksi <strong>${monthSet.length} bulan</strong> (${monthSet.join(', ')})<br>` +
+        `<strong>${wilayahCount} wilayah</strong>, total ${records.length} baris data.`;
+      document.getElementById('uploadBtn').disabled = records.length === 0;
+    }
+
+    document.getElementById('uploadBtn').addEventListener('click', async function(){
+      const btn = this;
+      const statusEl = document.getElementById('statusMsg');
+      const progressBar = document.getElementById('progressBar');
+      const progressFill = document.getElementById('progressFill');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+      statusEl.style.display = 'none';
+      progressBar.style.display = 'block';
+
+      try{
+        // 1. Simpan rincian per Regional+Wilayah -> disburse_detail
+        const CHUNK = 200;
+        for(let i = 0; i < parsedRecords.length; i += CHUNK){
+          const chunk = parsedRecords.slice(i, i + CHUNK);
+          const batch = db.batch();
+          chunk.forEach(rec => {
+            const slug = (s) => String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            const docId = `${slug(rec.bulan)}__${slug(rec.regional)}__${slug(rec.wilayah)}`;
+            const ref = db.collection('disburse_detail').doc(docId);
+            batch.set(ref, { ...rec, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: auth.currentUser.email });
+          });
+          await batch.commit();
+          progressFill.style.width = Math.round(Math.min(i + CHUNK, parsedRecords.length) / parsedRecords.length * 60) + '%';
+        }
+
+        // 2. Hitung & simpan total nasional per bulan -> disburse_summary (buat chart di Home)
+        const monthTotals = {};
+        parsedRecords.forEach(rec => {
+          if(!monthTotals[rec.bulan]) monthTotals[rec.bulan] = { budget: 0, actual: 0 };
+          monthTotals[rec.bulan].budget += rec.budget;
+          monthTotals[rec.bulan].actual += rec.actual;
+        });
+        const months = Object.keys(monthTotals);
+        for(let i = 0; i < months.length; i += 50){
+          const chunk = months.slice(i, i + 50);
+          const batch = db.batch();
+          chunk.forEach(bulan => {
+            const docId = bulan.toLowerCase().replace(/\s+/g, '_');
+            const ref = db.collection('disburse_summary').doc(docId);
+            batch.set(ref, {
+              bulan,
+              budget: monthTotals[bulan].budget,
+              actual: monthTotals[bulan].actual,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              updatedBy: auth.currentUser.email
+            }, { merge: true });
+          });
+          await batch.commit();
+        }
+        progressFill.style.width = '100%';
+
+        statusEl.textContent = `Berhasil menyimpan ${parsedRecords.length} baris rincian dan ${months.length} ringkasan bulanan.`;
+        statusEl.className = 'status-msg ok';
+        btn.textContent = 'Simpan ke Database';
+        btn.disabled = false;
+      }catch(err){
+        statusEl.textContent = 'Gagal menyimpan: ' + err.message;
+        statusEl.className = 'status-msg err';
+        btn.textContent = 'Simpan ke Database';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

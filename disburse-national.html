@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration Center — Disburse National</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#14213d; --slate:#3b5a82; --gray-mute:#6b7785;
+    --bg:#f5f7fa; --card:#fff; --gold:#b08d57; --border:#e4e8ee;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'IBM Plex Sans', sans-serif; background:var(--bg); color:var(--navy); min-height:100vh; }
+  .topbar{ background:#fff; border-bottom:1px solid var(--border); padding:16px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .topbar .eyebrow{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); font-weight:600; }
+  .topbar h1{ font-family:'Source Serif 4', serif; font-size:18px; font-weight:600; }
+  .back-link{ font-size:13px; color:var(--slate); text-decoration:none; font-weight:500; }
+  .upload-link{ font-size:13px; font-weight:600; color:#fff; background:var(--navy); padding:8px 14px; border-radius:6px; text-decoration:none; }
+  .top-actions{ display:flex; align-items:center; gap:14px; }
+  .wrap{ max-width:1200px; margin:0 auto; padding:28px 24px; }
+  .controls{ display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+  select.filter-select{ padding:10px 12px; border:1px solid var(--border); border-radius:6px; font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; background:#fff; color:var(--navy); }
+  .stat-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:24px; }
+  .stat-card{ background:var(--card); border:1px solid var(--border); border-radius:8px; padding:18px; }
+  .stat-card .label{ font-size:12px; color:var(--gray-mute); margin-bottom:8px; }
+  .stat-card .value{ font-family:'Source Serif 4', serif; font-size:24px; font-weight:600; color:var(--navy); }
+  .panel{ background:var(--card); border:1px solid var(--border); border-radius:10px; padding:22px; margin-bottom:20px; }
+  .panel h4{ font-family:'Source Serif 4', serif; font-size:16px; font-weight:600; margin-bottom:16px; }
+  .table-wrap{ overflow:auto; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; min-width:640px; }
+  thead th{ text-align:left; padding:11px 12px; background:#f8f9fb; color:var(--gray-mute); font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:600; border-bottom:1px solid var(--border); }
+  tbody td{ padding:10px 12px; border-bottom:1px solid var(--border); }
+  tbody tr:hover{ background:#fafbfc; }
+  .name-cell{ font-weight:600; color:var(--navy); }
+  .pct-good{ color:#1f8a5f; font-weight:600; }
+  .pct-warn{ color:#b07d1f; font-weight:600; }
+  .pct-bad{ color:#c9433a; font-weight:600; }
+  .empty-state{ text-align:center; padding:50px 20px; color:var(--gray-mute); font-size:13.5px; }
+  .denied{ text-align:center; padding:80px 20px; }
+  .denied h2{ font-family:'Source Serif 4', serif; font-size:22px; margin-bottom:10px; }
+  .denied p{ color:var(--gray-mute); font-size:14px; }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div>
+      <div class="eyebrow">Disburse National</div>
+      <h1>Disburse &amp; Forecast</h1>
+    </div>
+    <div class="top-actions">
+      <a class="upload-link" id="uploadLink" href="upload-disburse.html" style="display:none;">⬆ Upload Data</a>
+      <a class="back-link" href="dashboard.html">← Kembali ke Dashboard</a>
+    </div>
+  </div>
+
+  <div id="loadingCheck" class="wrap"><p style="color:var(--gray-mute); font-size:14px;">Memeriksa akses...</p></div>
+  <div id="denied" class="denied" style="display:none;">
+    <h2>Akses Ditolak</h2>
+    <p>Kamu belum punya akses ke menu Disburse National.</p>
+  </div>
+
+  <div id="gate" class="wrap" style="display:none;">
+    <div class="controls">
+      <select class="filter-select" id="regionalFilter"><option value="">Semua Regional</option></select>
+      <select class="filter-select" id="wilayahFilter"><option value="">Semua Wilayah</option></select>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">Total Budget</div><div class="value" id="statBudget">—</div></div>
+      <div class="stat-card"><div class="label">Total Actual</div><div class="value" id="statActual">—</div></div>
+      <div class="stat-card"><div class="label">Pencapaian</div><div class="value" id="statAchievement">—</div></div>
+      <div class="stat-card"><div class="label">Wilayah Ditampilkan</div><div class="value" id="statWilayah">—</div></div>
+    </div>
+
+    <div class="panel">
+      <h4>Tren Bulanan</h4>
+      <canvas id="disburseChart" height="90"></canvas>
+      <div class="empty-state" id="chartEmpty" style="display:none;">Belum ada data. Admin bisa unggah lewat halaman Upload Data.</div>
+    </div>
+
+    <div class="panel">
+      <h4>Rincian per Wilayah <span style="font-weight:400; color:var(--gray-mute); font-size:12px;">(total seluruh bulan yang tersedia)</span></h4>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Wilayah</th><th>Regional</th><th>Budget</th><th>Actual</th><th>Pencapaian</th></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBvRsO8ft9pHY0H3_5VXQD_-UftRYYVA-o",
+      authDomain: "business-admin-center.firebaseapp.com",
+      projectId: "business-admin-center",
+      storageBucket: "business-admin-center.firebasestorage.app",
+      messagingSenderId: "165059982705",
+      appId: "1:165059982705:web:2afa897d5b06fe2a1572d0",
+      measurementId: "G-TSW82QKX0P"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let isAdmin = false;
+    let allRows = [];
+    let chartInstance = null;
+
+    function formatRupiahShort(n){
+      if(Math.abs(n) >= 1e9) return 'Rp ' + (n/1e9).toFixed(1).replace('.0','') + ' M';
+      if(Math.abs(n) >= 1e6) return 'Rp ' + (n/1e6).toFixed(1).replace('.0','') + ' Jt';
+      return 'Rp ' + n.toLocaleString('id-ID');
+    }
+
+    auth.onAuthStateChanged(async function(user){
+      const loadingEl = document.getElementById('loadingCheck');
+      if(!user){ window.location.href = 'login.html'; return; }
+
+      let userData = null;
+      try{
+        const doc = await db.collection('users').doc(user.uid).get();
+        userData = doc.exists ? doc.data() : null;
+      }catch(e){}
+
+      if(!userData || userData.status === 'pending'){ window.location.href = 'pending.html'; return; }
+
+      isAdmin = userData.role === 'administrator' || userData.role === 'admin';
+      const hasAccess = isAdmin || (userData.permissions && userData.permissions.disburseNational);
+
+      loadingEl.style.display = 'none';
+      if(!hasAccess){
+        document.getElementById('denied').style.display = 'block';
+        return;
+      }
+      document.getElementById('gate').style.display = 'block';
+      if(isAdmin) document.getElementById('uploadLink').style.display = 'inline-block';
+      loadData();
+    });
+
+    async function loadData(){
+      const chartEmpty = document.getElementById('chartEmpty');
+      try{
+        const snap = await db.collection('disburse_detail').get();
+        if(snap.empty){ chartEmpty.style.display = 'block'; return; }
+        allRows = [];
+        snap.forEach(doc => allRows.push(doc.data()));
+
+        const regionalSet = [...new Set(allRows.map(r => r.regional).filter(Boolean))].sort();
+        const regionalFilter = document.getElementById('regionalFilter');
+        regionalSet.forEach(reg => {
+          const opt = document.createElement('option');
+          opt.value = reg; opt.textContent = reg;
+          regionalFilter.appendChild(opt);
+        });
+
+        render();
+      }catch(e){
+        chartEmpty.style.display = 'block';
+        chartEmpty.textContent = 'Gagal memuat data: ' + e.message;
+      }
+    }
+
+    function updateWilayahOptions(regional){
+      const wilayahFilter = document.getElementById('wilayahFilter');
+      const current = wilayahFilter.value;
+      wilayahFilter.innerHTML = '<option value="">Semua Wilayah</option>';
+      const wilayahSet = [...new Set(allRows.filter(r => !regional || r.regional === regional).map(r => r.wilayah))].sort();
+      wilayahSet.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = w; opt.textContent = w;
+        wilayahFilter.appendChild(opt);
+      });
+      if(wilayahSet.includes(current)) wilayahFilter.value = current;
+    }
+
+    function render(){
+      const regional = document.getElementById('regionalFilter').value;
+      const wilayah = document.getElementById('wilayahFilter').value;
+      const filtered = allRows.filter(r => (!regional || r.regional === regional) && (!wilayah || r.wilayah === wilayah));
+
+      // Stat cards
+      const totalBudget = filtered.reduce((a,r) => a + (r.budget||0), 0);
+      const totalActual = filtered.reduce((a,r) => a + (r.actual||0), 0);
+      document.getElementById('statBudget').textContent = formatRupiahShort(totalBudget);
+      document.getElementById('statActual').textContent = formatRupiahShort(totalActual);
+      document.getElementById('statAchievement').textContent = totalBudget > 0 ? Math.round(totalActual/totalBudget*100) + '%' : '—';
+      document.getElementById('statWilayah').textContent = new Set(filtered.map(r => r.wilayah)).size;
+
+      // Chart: group by bulan
+      const monthMap = {};
+      filtered.forEach(r => {
+        if(!monthMap[r.bulan]) monthMap[r.bulan] = { budget: 0, actual: 0 };
+        monthMap[r.bulan].budget += r.budget || 0;
+        monthMap[r.bulan].actual += r.actual || 0;
+      });
+      const months = Object.keys(monthMap);
+      const chartEl = document.getElementById('disburseChart');
+      const chartEmpty = document.getElementById('chartEmpty');
+
+      if(months.length === 0){
+        chartEmpty.style.display = 'block';
+        chartEl.style.display = 'none';
+      } else {
+        chartEmpty.style.display = 'none';
+        chartEl.style.display = 'block';
+        if(chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(chartEl, {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [
+              { label: 'Budget', data: months.map(m => monthMap[m].budget), backgroundColor: '#c9d3e0', borderRadius: 4 },
+              { label: 'Actual', data: months.map(m => monthMap[m].actual), backgroundColor: '#14213d', borderRadius: 4 }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { ticks: { callback: v => formatRupiahShort(v) } } }
+          }
+        });
+      }
+
+      // Table: group by wilayah (sum across all months in current filter)
+      const wilayahMap = {};
+      filtered.forEach(r => {
+        const key = r.wilayah;
+        if(!wilayahMap[key]) wilayahMap[key] = { regional: r.regional, budget: 0, actual: 0 };
+        wilayahMap[key].budget += r.budget || 0;
+        wilayahMap[key].actual += r.actual || 0;
+      });
+
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      Object.keys(wilayahMap).sort().forEach(w => {
+        const d = wilayahMap[w];
+        const pct = d.budget > 0 ? Math.round(d.actual/d.budget*100) : 0;
+        const pctClass = pct >= 80 ? 'pct-good' : pct >= 50 ? 'pct-warn' : 'pct-bad';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="name-cell">${w}</td>
+          <td>${d.regional}</td>
+          <td>${formatRupiahShort(d.budget)}</td>
+          <td>${formatRupiahShort(d.actual)}</td>
+          <td class="${pctClass}">${pct}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('regionalFilter').addEventListener('change', function(){
+      updateWilayahOptions(this.value);
+      render();
+    });
+    document.getElementById('wilayahFilter').addEventListener('change', render);
+  </script>
+</body>
+</html>
