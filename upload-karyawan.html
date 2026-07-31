@@ -153,6 +153,19 @@
       return name ? workbook.Sheets[name] : null;
     }
 
+    // Beberapa sheet punya area ter-format sampai jutaan baris kosong (efek formatting Excel).
+    // Fungsi ini membatasi pembacaan cuma sampai beberapa ribu baris setelah header,
+    // biar nggak berat/gagal saat parsing di browser.
+    function sheetToRowsBounded(sheet, headerRowIndex, maxDataRows){
+      if(!sheet['!ref']) return [];
+      const fullRange = XLSX.utils.decode_range(sheet['!ref']);
+      const boundedRange = {
+        s: { r: headerRowIndex, c: fullRange.s.c },
+        e: { r: Math.min(fullRange.e.r, headerRowIndex + maxDataRows), c: fullRange.e.c }
+      };
+      return XLSX.utils.sheet_to_json(sheet, { range: boundedRange, defval: '' });
+    }
+
     function handleFile(file){
       document.getElementById('fileName').style.display = 'block';
       document.getElementById('fileName').textContent = '📎 ' + file.name;
@@ -164,7 +177,7 @@
 
         // --- Sheet 1: Karyawan Aktif ---
         const aktifSheet = findSheet(workbook, 'aktif') || workbook.Sheets[workbook.SheetNames[0]];
-        const aktifRows = XLSX.utils.sheet_to_json(aktifSheet, { range: 1, defval: '' })
+        const aktifRows = sheetToRowsBounded(aktifSheet, 1, 5000)
           .filter(r => String(r['NOMOR KARYAWAN'] || '').trim())
           .map(r => ({
             basic: {
@@ -196,7 +209,7 @@
 
         // --- Sheet 2: Terminasi (semua field jadi satu, admin-only) ---
         const terminasiSheet = findSheet(workbook, 'terminasi');
-        const terminasiRows = terminasiSheet ? XLSX.utils.sheet_to_json(terminasiSheet, { range: 1, defval: '' })
+        const terminasiRows = terminasiSheet ? sheetToRowsBounded(terminasiSheet, 1, 5000)
           .filter(r => String(r['NAMA KARYAWAN'] || '').trim())
           .map(r => ({
             nomorKaryawan: String(r['NOMOR KARYAWAN'] || r['NOMOR KARYAWAN.1'] || '').trim(),
@@ -218,7 +231,7 @@
 
         // --- Sheet 3: Mutasi ---
         const mutasiSheet = findSheet(workbook, 'mutasi');
-        const mutasiRows = mutasiSheet ? XLSX.utils.sheet_to_json(mutasiSheet, { range: 1, defval: '' })
+        const mutasiRows = mutasiSheet ? sheetToRowsBounded(mutasiSheet, 1, 5000)
           .filter(r => String(r['Nama'] || '').trim())
           .map((r, idx) => ({
             basic: {
