@@ -42,6 +42,14 @@
   .denied{ text-align:center; padding:80px 20px; }
   .denied h2{ font-family:'Source Serif 4', serif; font-size:22px; margin-bottom:10px; }
   .denied p{ color:var(--gray-mute); font-size:14px; }
+
+  @media print{
+    .top-actions #printBtn, .top-actions #uploadLink, .back-link{ display:none !important; }
+    .controls{ display:none !important; }
+    body{ background:#fff; }
+    .panel, .stat-card{ break-inside:avoid; border:1px solid #ccc; }
+    .topbar{ border-bottom:2px solid #000; }
+  }
 </style>
 </head>
 <body>
@@ -52,6 +60,7 @@
       <h1>Disburse &amp; Forecast</h1>
     </div>
     <div class="top-actions">
+      <button class="upload-link" id="printBtn" style="border:1px solid var(--border); background:#fff; color:var(--navy); cursor:pointer;">🖨 Print / Simpan PDF</button>
       <a class="upload-link" id="uploadLink" href="upload-disburse.html" style="display:none;">⬆ Upload Data</a>
       <a class="back-link" href="dashboard.html">← Kembali ke Dashboard</a>
     </div>
@@ -70,14 +79,14 @@
     </div>
 
     <div class="stat-grid">
-      <div class="stat-card"><div class="label">Total Budget</div><div class="value" id="statBudget">—</div></div>
-      <div class="stat-card"><div class="label">Total Actual</div><div class="value" id="statActual">—</div></div>
+      <div class="stat-card"><div class="label">Total Forecast</div><div class="value" id="statBudget">—</div></div>
+      <div class="stat-card"><div class="label">Total Disburse</div><div class="value" id="statActual">—</div></div>
       <div class="stat-card"><div class="label">Pencapaian</div><div class="value" id="statAchievement">—</div></div>
       <div class="stat-card"><div class="label">Wilayah Ditampilkan</div><div class="value" id="statWilayah">—</div></div>
     </div>
 
     <div class="panel">
-      <h4>Tren Bulanan</h4>
+      <h4>Tren Bulanan — Forecast vs Disburse</h4>
       <canvas id="disburseChart" height="90"></canvas>
       <div class="empty-state" id="chartEmpty" style="display:none;">Belum ada data. Admin bisa unggah lewat halaman Upload Data.</div>
     </div>
@@ -87,7 +96,7 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Wilayah</th><th>Regional</th><th>Budget</th><th>Actual</th><th>Pencapaian</th></tr>
+            <tr><th>Wilayah</th><th>Regional</th><th>Forecast</th><th>Disburse</th><th>Pencapaian</th></tr>
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
@@ -117,10 +126,8 @@
     let allRows = [];
     let chartInstance = null;
 
-    function formatRupiahShort(n){
-      if(Math.abs(n) >= 1e9) return 'Rp ' + (n/1e9).toFixed(1).replace('.0','') + ' M';
-      if(Math.abs(n) >= 1e6) return 'Rp ' + (n/1e6).toFixed(1).replace('.0','') + ' Jt';
-      return 'Rp ' + n.toLocaleString('id-ID');
+    function formatRupiahFull(n){
+      return 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
     }
 
     auth.onAuthStateChanged(async function(user){
@@ -192,8 +199,8 @@
       // Stat cards
       const totalBudget = filtered.reduce((a,r) => a + (r.budget||0), 0);
       const totalActual = filtered.reduce((a,r) => a + (r.actual||0), 0);
-      document.getElementById('statBudget').textContent = formatRupiahShort(totalBudget);
-      document.getElementById('statActual').textContent = formatRupiahShort(totalActual);
+      document.getElementById('statBudget').textContent = formatRupiahFull(totalBudget);
+      document.getElementById('statActual').textContent = formatRupiahFull(totalActual);
       document.getElementById('statAchievement').textContent = totalBudget > 0 ? Math.round(totalActual/totalBudget*100) + '%' : '—';
       document.getElementById('statWilayah').textContent = new Set(filtered.map(r => r.wilayah)).size;
 
@@ -220,14 +227,14 @@
           data: {
             labels: months,
             datasets: [
-              { label: 'Budget', data: months.map(m => monthMap[m].budget), backgroundColor: '#c9d3e0', borderRadius: 4 },
-              { label: 'Actual', data: months.map(m => monthMap[m].actual), backgroundColor: '#14213d', borderRadius: 4 }
+              { label: 'Forecast', data: months.map(m => monthMap[m].budget), backgroundColor: '#c9d3e0', borderRadius: 4 },
+              { label: 'Disburse', data: months.map(m => monthMap[m].actual), backgroundColor: '#14213d', borderRadius: 4 }
             ]
           },
           options: {
             responsive: true,
             plugins: { legend: { position: 'bottom' } },
-            scales: { y: { ticks: { callback: v => formatRupiahShort(v) } } }
+            scales: { y: { ticks: { callback: v => formatRupiahFull(v) } } }
           }
         });
       }
@@ -251,8 +258,8 @@
         tr.innerHTML = `
           <td class="name-cell">${w}</td>
           <td>${d.regional}</td>
-          <td>${formatRupiahShort(d.budget)}</td>
-          <td>${formatRupiahShort(d.actual)}</td>
+          <td>${formatRupiahFull(d.budget)}</td>
+          <td>${formatRupiahFull(d.actual)}</td>
           <td class="${pctClass}">${pct}%</td>
         `;
         tbody.appendChild(tr);
@@ -264,6 +271,7 @@
       render();
     });
     document.getElementById('wilayahFilter').addEventListener('change', render);
+    document.getElementById('printBtn').addEventListener('click', () => window.print());
   </script>
 </body>
 </html>
