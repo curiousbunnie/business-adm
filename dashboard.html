@@ -297,6 +297,7 @@
           <li><a href="#">Regional 2</a></li>
           <li><a href="karyawan.html">Data Karyawan</a></li>
           <li><a href="mutasi.html">Riwayat Mutasi</a></li>
+          <li id="terminasiMenuItem" style="display:none;"><a href="terminasi.html">Data Terminasi</a></li>
         </ul>
       </div>
 
@@ -528,6 +529,7 @@
         // Administrator lihat semua menu + panel Manajemen User
         document.getElementById('userMgmtMenuItem').style.display = 'block';
         document.getElementById('uploadMenuItem').style.display = 'block';
+        document.getElementById('terminasiMenuItem').style.display = 'block';
       } else {
         // User biasa: sembunyikan menu yang nggak diizinkan
         document.querySelectorAll('[data-perm-menu]').forEach(el => {
